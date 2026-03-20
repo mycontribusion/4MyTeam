@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { Plus } from 'lucide-react'
 
-export default function AddPatientForm({ onAdd }) {
+export default function AddPatientForm({ onAdd, onCancel }) {
     const [name, setName] = useState('')
     const [hospitalNumber, setHospitalNumber] = useState('')
     const [ward, setWard] = useState('')
@@ -144,7 +144,16 @@ export default function AddPatientForm({ onAdd }) {
                             />
                         </div>
 
-                        <div className="flex items-end">
+                        <div className="flex items-end gap-2">
+                            <button
+                                type="button"
+                                className="btn-secondary px-4 pb-0 text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                                onClick={onCancel}
+                                aria-label="Cancel adding patient"
+                                style={{ minHeight: '48px' }}
+                            >
+                                Cancel
+                            </button>
                             <button
                                 id="btn-add-patient"
                                 type="submit"

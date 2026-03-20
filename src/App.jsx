@@ -25,6 +25,7 @@ export default function App() {
     const [showExport, setShowExport] = useState(false)
     const [showScanner, setShowScanner] = useState(false)
     const [showConfirmClear, setShowConfirmClear] = useState(false)
+    const [showAddForm, setShowAddForm] = useState(false)
     const [saveFlash, setSaveFlash] = useState(false)
 
     // Persist to localStorage on every change
@@ -61,6 +62,7 @@ export default function App() {
             ...prev,
             { id: generateId(), name: n, hospitalNumber: h, ward: w, bed: b, note: t },
         ])
+        setShowAddForm(false) // Hide form on successful add
         return true
     }, [patients])
 
@@ -107,10 +109,23 @@ export default function App() {
             <Header saveFlash={saveFlash} patientCount={patients.length} />
 
             <main className="flex-1 w-full max-w-2xl mx-auto px-4 pt-6 pb-28">
-                <AddPatientForm onAdd={addPatient} />
+                {!showAddForm ? (
+                    <button
+                        className="btn-primary w-full shadow-md mb-6 py-4 text-base"
+                        onClick={() => setShowAddForm(true)}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                        Add New Patient
+                    </button>
+                ) : (
+                    <AddPatientForm
+                        onAdd={addPatient}
+                        onCancel={() => setShowAddForm(false)}
+                    />
+                )}
 
                 {patients.length === 0 ? (
-                    <EmptyState />
+                    <EmptyState onAddClick={() => setShowAddForm(true)} />
                 ) : (
                     <PatientList
                         patients={patients}
