@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f9fafb;
+    color: #111827;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed select-none;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.625rem 1.25rem;
+  }
+
+  .btn-primary {
+    @apply btn bg-blue-700 text-white hover:bg-blue-800 active:scale-95 focus:ring-blue-300 shadow-md shadow-blue-200;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-blue-700 border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 active:scale-95 focus:ring-blue-200;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 active:scale-95 focus:ring-red-300 shadow-md shadow-red-100;
+  }
+
+  .btn-ghost {
+    @apply btn text-gray-500 hover:text-gray-700 hover:bg-gray-100 active:scale-95 focus:ring-gray-200;
+  }
+
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-1 active:scale-90;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 transition-all duration-200;
+  }
+
+  .card:hover {
+    @apply shadow-md -translate-y-0.5;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base font-medium text-gray-900 placeholder-gray-400 outline-none transition-all duration-200;
+    min-height: 48px;
+  }
+
+  .input-field:focus {
+    @apply border-blue-500 ring-4 ring-blue-100;
+  }
+
+  /* Modal backdrop */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .modal-box {
+    @apply bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6;
+    animation: slideUp 0.25s ease;
+  }
+
+  /* Scanner overlay */
+  #qr-reader {
+    border: none !important;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  #qr-reader video {
+    border-radius: 12px;
+  }
+
+  #qr-reader__dashboard_section_csr button {
+    background-color: #1d4ed8 !important;
+    border-radius: 10px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    padding: 10px 20px !important;
+    min-height: 44px !important;
+  }
+
+  #qr-reader__status_span {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    color: #6b7280 !important;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.pulse-badge {
+  animation: pulse-badge 2.5s ease-in-out infinite;
+}
