@@ -39,20 +39,27 @@ export default function App() {
         }
     }, [patients])
 
-    const addPatient = useCallback(({ ward, bed }) => {
-        const wardTrimmed = ward.trim().toUpperCase()
-        const bedTrimmed = bed.trim()
-        if (!wardTrimmed || !bedTrimmed) return false
+    const addPatient = useCallback(({ name, hospitalNumber, ward, bed, note }) => {
+        const n = name.trim()
+        const h = hospitalNumber.trim()
+        const w = ward.trim().toUpperCase()
+        const b = bed.trim()
+        const t = note.trim()
+
+        if (!w && !h && !n) return false
 
         // Duplicate check
-        const exists = patients.some(
-            (p) => p.ward === wardTrimmed && p.bed === bedTrimmed
-        )
+        const exists = patients.some((p) => {
+            if (h && p.hospitalNumber === h) return true;
+            if (!h && p.name === n && p.ward === w && p.bed === b && (n || w || b)) return true;
+            return false;
+        })
+
         if (exists) return 'duplicate'
 
         setPatients((prev) => [
             ...prev,
-            { id: generateId(), ward: wardTrimmed, bed: bedTrimmed },
+            { id: generateId(), name: n, hospitalNumber: h, ward: w, bed: b, note: t },
         ])
         return true
     }, [patients])
@@ -66,21 +73,30 @@ export default function App() {
         setShowConfirmClear(false)
     }, [])
 
-    // Merge imported patients, deduplicate by ward+bed
+    // Merge imported patients, deduplicate
     const importPatients = useCallback((incoming) => {
         setPatients((prev) => {
-            const existingKeys = new Set(prev.map((p) => `${p.ward}|${p.bed}`))
+            const existingHospNums = new Set(prev.filter(p => p.hospitalNumber).map(p => p.hospitalNumber))
+            const existingCombos = new Set(prev.filter(p => !p.hospitalNumber).map(p => `${p.name}|${p.ward}|${p.bed}`))
+
             const newOnes = incoming
-                .filter((p) => {
-                    const w = (p.w || p.ward || '').trim().toUpperCase()
-                    const b = (p.b || p.bed || '').trim()
-                    return w && b && !existingKeys.has(`${w}|${b}`)
-                })
                 .map((p) => ({
                     id: generateId(),
+                    name: (p.n || p.name || '').trim(),
+                    hospitalNumber: (p.h || p.hospitalNumber || '').trim(),
                     ward: (p.w || p.ward || '').trim().toUpperCase(),
                     bed: (p.b || p.bed || '').trim(),
+                    note: (p.t || p.note || '').trim(),
                 }))
+                .filter((p) => {
+                    if (!p.name && !p.hospitalNumber && !p.ward) return false;
+                    if (p.hospitalNumber && existingHospNums.has(p.hospitalNumber)) return false;
+                    if (!p.hospitalNumber && existingCombos.has(`${p.name}|${p.ward}|${p.bed}`)) return false;
+
+                    if (p.hospitalNumber) existingHospNums.add(p.hospitalNumber);
+                    else existingCombos.add(`${p.name}|${p.ward}|${p.bed}`);
+                    return true;
+                })
             return [...prev, ...newOnes]
         })
         setShowScanner(false)

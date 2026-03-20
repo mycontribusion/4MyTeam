@@ -2,40 +2,50 @@ import { useState, useRef } from 'react'
 import { Plus } from 'lucide-react'
 
 export default function AddPatientForm({ onAdd }) {
+    const [name, setName] = useState('')
+    const [hospitalNumber, setHospitalNumber] = useState('')
     const [ward, setWard] = useState('')
     const [bed, setBed] = useState('')
+    const [note, setNote] = useState('')
     const [error, setError] = useState('')
+
+    const hospNumRef = useRef(null)
+    const wardRef = useRef(null)
     const bedRef = useRef(null)
+    const noteRef = useRef(null)
 
     const handleSubmit = (e) => {
         e.preventDefault()
         setError('')
 
-        if (!ward.trim()) {
-            setError('Ward is required.')
-            return
-        }
-        if (!bed.trim()) {
-            setError('Bed number is required.')
+        const n = name.trim()
+        const h = hospitalNumber.trim()
+        const w = ward.trim()
+
+        if (!w && !h && !n) {
+            setError('Please provide at least a Name, Hospital Number, or Ward.')
             return
         }
 
-        const result = onAdd({ ward, bed })
+        const result = onAdd({ name, hospitalNumber, ward, bed, note })
         if (result === 'duplicate') {
-            setError(`Ward ${ward.trim().toUpperCase()} Bed ${bed.trim()} is already on the list.`)
+            setError('A patient with this Hospital Number (or identical details) already exists.')
             return
         }
         if (result) {
+            setName('')
+            setHospitalNumber('')
             setWard('')
             setBed('')
+            setNote('')
             setError('')
         }
     }
 
-    const handleWardKeyDown = (e) => {
+    const handleKeyDown = (e, nextRef) => {
         if (e.key === 'Enter') {
             e.preventDefault()
-            bedRef.current?.focus()
+            nextRef.current?.focus()
         }
     }
 
@@ -45,26 +55,59 @@ export default function AddPatientForm({ onAdd }) {
                 Add Patient
             </h2>
             <form id="add-patient-form" onSubmit={handleSubmit}>
-                <div className="flex gap-3 mb-3">
-                    <div className="flex-1">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                    <div className="col-span-2 md:col-span-2">
+                        <label htmlFor="input-name" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                            Patient Name
+                        </label>
+                        <input
+                            id="input-name"
+                            type="text"
+                            className="input-field text-left font-medium text-base"
+                            placeholder="John Doe"
+                            value={name}
+                            onChange={(e) => { setName(e.target.value); setError('') }}
+                            onKeyDown={(e) => handleKeyDown(e, hospNumRef)}
+                            autoComplete="off"
+                        />
+                    </div>
+                    <div className="col-span-2 md:col-span-2">
+                        <label htmlFor="input-hospnum" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                            Hospital Number
+                        </label>
+                        <input
+                            id="input-hospnum"
+                            ref={hospNumRef}
+                            type="text"
+                            className="input-field text-center font-bold text-base"
+                            placeholder="H-123456"
+                            value={hospitalNumber}
+                            onChange={(e) => { setHospitalNumber(e.target.value); setError('') }}
+                            onKeyDown={(e) => handleKeyDown(e, wardRef)}
+                            autoComplete="off"
+                        />
+                    </div>
+
+                    <div className="col-span-1 md:col-span-1">
                         <label htmlFor="input-ward" className="block text-xs font-semibold text-gray-500 mb-1.5">
                             Ward
                         </label>
                         <input
                             id="input-ward"
+                            ref={wardRef}
                             type="text"
                             className="input-field text-center font-bold uppercase text-lg tracking-wider"
                             placeholder="A1"
                             value={ward}
                             onChange={(e) => { setWard(e.target.value); setError('') }}
-                            onKeyDown={handleWardKeyDown}
+                            onKeyDown={(e) => handleKeyDown(e, bedRef)}
                             maxLength={10}
                             autoCapitalize="characters"
                             autoComplete="off"
                             spellCheck={false}
                         />
                     </div>
-                    <div className="flex-1">
+                    <div className="col-span-1 md:col-span-1">
                         <label htmlFor="input-bed" className="block text-xs font-semibold text-gray-500 mb-1.5">
                             Bed No.
                         </label>
@@ -76,22 +119,43 @@ export default function AddPatientForm({ onAdd }) {
                             placeholder="12"
                             value={bed}
                             onChange={(e) => { setBed(e.target.value); setError('') }}
+                            onKeyDown={(e) => handleKeyDown(e, noteRef)}
                             maxLength={10}
                             autoComplete="off"
                             spellCheck={false}
                             inputMode="text"
                         />
                     </div>
-                    <div className="flex items-end">
-                        <button
-                            id="btn-add-patient"
-                            type="submit"
-                            className="btn-primary px-4"
-                            aria-label="Add patient"
-                        >
-                            <Plus size={20} strokeWidth={2.5} />
-                            <span className="hidden sm:inline">Add</span>
-                        </button>
+
+                    <div className="col-span-2 md:col-span-4 flex gap-3">
+                        <div className="flex-1">
+                            <label htmlFor="input-note" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                                Note (Optional)
+                            </label>
+                            <input
+                                id="input-note"
+                                ref={noteRef}
+                                type="text"
+                                className="input-field text-left text-sm"
+                                placeholder="Requires fasting..."
+                                value={note}
+                                onChange={(e) => { setNote(e.target.value); setError('') }}
+                                autoComplete="off"
+                            />
+                        </div>
+
+                        <div className="flex items-end">
+                            <button
+                                id="btn-add-patient"
+                                type="submit"
+                                className="btn-primary px-4 pb-0"
+                                aria-label="Add patient"
+                                style={{ minHeight: '48px' }}
+                            >
+                                <Plus size={20} className="sm:hidden" strokeWidth={2.5} />
+                                <span className="hidden sm:inline flex items-center gap-1"><Plus size={18} strokeWidth={2.5} /> Add</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 

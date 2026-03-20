@@ -1,9 +1,10 @@
 import { Trash2 } from 'lucide-react'
 
 export default function PatientCard({ patient, onDelete }) {
-    const { id, ward, bed } = patient
+    const { id, name, hospitalNumber, ward, bed, note } = patient
 
-    // Generate a color based on ward string for visual variety
+    // Generate a color based on ward or name or id string for visual variety
+    const colorStr = ward || name || id || ''
     const wardColors = [
         'bg-blue-100 text-blue-800 border-blue-200',
         'bg-purple-100 text-purple-800 border-purple-200',
@@ -12,48 +13,60 @@ export default function PatientCard({ patient, onDelete }) {
         'bg-pink-100 text-pink-800 border-pink-200',
         'bg-indigo-100 text-indigo-800 border-indigo-200',
     ]
-    const colorIdx = ward.charCodeAt(0) % wardColors.length
-    const wardColor = wardColors[colorIdx]
+    const colorIdx = colorStr.charCodeAt(0) % wardColors.length || 0
+    const badgeColor = wardColors[colorIdx]
 
     return (
         <div
-            className="card p-4 flex items-center gap-4 group"
+            className="card p-4 flex flex-col sm:flex-row gap-4 group"
             role="listitem"
-            aria-label={`Ward ${ward}, Bed ${bed}`}
         >
-            {/* Ward badge */}
-            <div className={`flex-shrink-0 rounded-xl border-2 px-3 py-2 text-center min-w-[56px] ${wardColor}`}>
-                <div className="text-xs font-semibold uppercase tracking-wider opacity-70">Ward</div>
-                <div className="text-lg font-extrabold leading-tight">{ward}</div>
+            <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+
+                {/* Ward/Bed or Initial Badge */}
+                <div className={`flex-shrink-0 flex flex-col items-center justify-center rounded-xl border-2 px-3 py-2 text-center min-w-[64px] min-h-[64px] ${badgeColor}`}>
+                    {ward || bed ? (
+                        <>
+                            {ward && <div className="text-xs font-semibold uppercase tracking-wider opacity-70 leading-none mb-1">{ward}</div>}
+                            {bed && <div className="text-xl font-extrabold leading-tight">{bed}</div>}
+                            {!bed && ward && <div className="text-xl font-extrabold leading-tight">-</div>}
+                        </>
+                    ) : (
+                        <div className="text-2xl font-extrabold uppercase leading-none">
+                            {name ? name.charAt(0) : '?'}
+                        </div>
+                    )}
+                </div>
+
+                {/* Patient Info */}
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        {name && <div className="text-lg font-bold text-gray-900 leading-tight truncate">{name}</div>}
+                        {hospitalNumber && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis">
+                                {hospitalNumber}
+                            </span>
+                        )}
+                    </div>
+                    {(!name && !hospitalNumber) && (
+                        <div className="text-sm font-medium text-gray-500 italic">No name provided</div>
+                    )}
+                    {note && <div className="text-sm text-gray-600 mt-1 line-clamp-2">{note}</div>}
+                </div>
             </div>
 
-            {/* Bed info */}
-            <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Bed</div>
-                <div className="text-2xl font-extrabold text-gray-900 leading-tight">{bed}</div>
+            {/* Delete button (moved to top right on mobile, aligned center on desktop) */}
+            <div className="flex justify-end sm:items-center -mt-2 sm:mt-0">
+                <button
+                    id={`btn-delete-${id}`}
+                    className="btn-icon text-gray-300 hover:text-red-500 hover:bg-red-50 focus:ring-red-200 flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                    onClick={() => onDelete(id)}
+                    aria-label="Remove patient"
+                    title="Remove patient"
+                >
+                    <Trash2 size={18} strokeWidth={2} />
+                </button>
             </div>
-
-            {/* Hospital icon accent */}
-            <div className="hidden sm:flex flex-shrink-0 bg-gray-50 rounded-xl p-2 text-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 6v4" />
-                    <path d="M14 14H10" />
-                    <path d="M15 18H9" />
-                    <path d="M3 2h18v20H3z" />
-                    <path d="M12 2v4" />
-                </svg>
-            </div>
-
-            {/* Delete button */}
-            <button
-                id={`btn-delete-${id}`}
-                className="btn-icon text-gray-300 hover:text-red-500 hover:bg-red-50 focus:ring-red-200 flex-shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                onClick={() => onDelete(id)}
-                aria-label={`Remove Ward ${ward} Bed ${bed}`}
-                title="Remove patient"
-            >
-                <Trash2 size={18} strokeWidth={2} />
-            </button>
         </div>
     )
 }

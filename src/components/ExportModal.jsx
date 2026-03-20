@@ -5,13 +5,29 @@ import { X, Copy, Share2, CheckCircle } from 'lucide-react'
 export default function ExportModal({ patients, onClose }) {
     const [copied, setCopied] = useState(false)
 
-    // Compress to minimal JSON: [{w:"A1", b:"12"}, ...]
-    const compressed = patients.map((p) => ({ w: p.ward, b: p.bed }))
+    // Compress to minimal JSON: omit empty values to maximize QR capacity
+    const compressed = patients.map((p) => {
+        const obj = {}
+        if (p.ward) obj.w = p.ward
+        if (p.bed) obj.b = p.bed
+        if (p.name) obj.n = p.name
+        if (p.hospitalNumber) obj.h = p.hospitalNumber
+        if (p.note) obj.t = p.note
+        return obj
+    })
     const qrData = JSON.stringify(compressed)
 
     // Human-readable text
     const textData = patients
-        .map((p) => `Ward ${p.ward} – Bed ${p.bed}`)
+        .map((p) => {
+            const parts = []
+            if (p.name) parts.push(`Name: ${p.name}`)
+            if (p.hospitalNumber) parts.push(`Hosp: ${p.hospitalNumber}`)
+            if (p.ward) parts.push(`Ward: ${p.ward}`)
+            if (p.bed) parts.push(`Bed: ${p.bed}`)
+            if (p.note) parts.push(`Note: ${p.note}`)
+            return parts.join(' | ')
+        })
         .join('\n')
 
     const handleCopyOrShare = async () => {
