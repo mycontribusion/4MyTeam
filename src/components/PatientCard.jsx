@@ -1,6 +1,6 @@
-import { Trash2 } from 'lucide-react'
+import { Trash2, Pencil } from 'lucide-react'
 
-export default function PatientCard({ patient, onDelete }) {
+export default function PatientCard({ patient, onEdit, onDelete }) {
     const { id, name, hospitalNumber, ward, bed, note } = patient
 
     // Generate a color based on ward or name or id string for visual variety
@@ -55,11 +55,19 @@ export default function PatientCard({ patient, onDelete }) {
                 </div>
             </div>
 
-            {/* Delete button (moved to top right on mobile, aligned center on desktop) */}
-            <div className="flex justify-end sm:items-center -mt-2 sm:mt-0">
+            {/* Actions (moved to top right on mobile, aligned center on desktop) */}
+            <div className="flex justify-end sm:items-center -mt-2 sm:mt-0 gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <button
+                    className="btn-icon text-gray-400 hover:text-blue-600 hover:bg-blue-50 focus:ring-blue-200 flex-shrink-0"
+                    onClick={() => onEdit(patient)}
+                    aria-label="Edit patient"
+                    title="Edit patient"
+                >
+                    <Pencil size={18} strokeWidth={2} />
+                </button>
                 <button
                     id={`btn-delete-${id}`}
-                    className="btn-icon text-gray-300 hover:text-red-500 hover:bg-red-50 focus:ring-red-200 flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                    className="btn-icon text-gray-400 hover:text-red-600 hover:bg-red-50 focus:ring-red-200 flex-shrink-0"
                     onClick={() => onDelete(id)}
                     aria-label="Remove patient"
                     title="Remove patient"

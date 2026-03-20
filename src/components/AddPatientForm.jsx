@@ -1,13 +1,29 @@
-import { useState, useRef } from 'react'
-import { Plus } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Plus, Save } from 'lucide-react'
 
-export default function AddPatientForm({ onAdd, onCancel }) {
+export default function AddPatientForm({ onAdd, onCancel, initialData }) {
     const [name, setName] = useState('')
     const [hospitalNumber, setHospitalNumber] = useState('')
     const [ward, setWard] = useState('')
     const [bed, setBed] = useState('')
     const [note, setNote] = useState('')
     const [error, setError] = useState('')
+
+    useEffect(() => {
+        if (initialData) {
+            setName(initialData.name || '')
+            setHospitalNumber(initialData.hospitalNumber || '')
+            setWard(initialData.ward || '')
+            setBed(initialData.bed || '')
+            setNote(initialData.note || '')
+        } else {
+            setName('')
+            setHospitalNumber('')
+            setWard('')
+            setBed('')
+            setNote('')
+        }
+    }, [initialData])
 
     const hospNumRef = useRef(null)
     const wardRef = useRef(null)
@@ -52,7 +68,7 @@ export default function AddPatientForm({ onAdd, onCancel }) {
     return (
         <div className="card p-4 mb-6">
             <h2 className="font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wider">
-                Add Patient
+                {initialData ? 'Edit Patient' : 'Add Patient'}
             </h2>
             <form id="add-patient-form" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
@@ -158,11 +174,20 @@ export default function AddPatientForm({ onAdd, onCancel }) {
                                 id="btn-add-patient"
                                 type="submit"
                                 className="btn-primary px-4 pb-0"
-                                aria-label="Add patient"
+                                aria-label={initialData ? "Save changes" : "Add patient"}
                                 style={{ minHeight: '48px' }}
                             >
-                                <Plus size={20} className="sm:hidden" strokeWidth={2.5} />
-                                <span className="hidden sm:inline flex items-center gap-1"><Plus size={18} strokeWidth={2.5} /> Add</span>
+                                {initialData ? (
+                                    <>
+                                        <Save size={20} className="sm:hidden" strokeWidth={2.5} />
+                                        <span className="hidden sm:inline flex items-center gap-1"><Save size={18} strokeWidth={2.5} /> Save</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus size={20} className="sm:hidden" strokeWidth={2.5} />
+                                        <span className="hidden sm:inline flex items-center gap-1"><Plus size={18} strokeWidth={2.5} /> Add</span>
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

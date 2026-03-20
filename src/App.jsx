@@ -26,6 +26,7 @@ export default function App() {
     const [showScanner, setShowScanner] = useState(false)
     const [showConfirmClear, setShowConfirmClear] = useState(false)
     const [showAddForm, setShowAddForm] = useState(false)
+    const [editingPatient, setEditingPatient] = useState(null)
     const [saveFlash, setSaveFlash] = useState(false)
 
     // Persist to localStorage on every change
@@ -40,7 +41,7 @@ export default function App() {
         }
     }, [patients])
 
-    const addPatient = useCallback(({ name, hospitalNumber, ward, bed, note }) => {
+    const savePatient = useCallback(({ name, hospitalNumber, ward, bed, note }) => {
         const n = name.trim()
         const h = hospitalNumber.trim()
         const w = ward.trim().toUpperCase()
@@ -51,6 +52,8 @@ export default function App() {
 
         // Duplicate check
         const exists = patients.some((p) => {
+            if (editingPatient && p.id === editingPatient.id) return false;
+
             if (h && p.hospitalNumber === h) return true;
             if (!h && p.name === n && p.ward === w && p.bed === b && (n || w || b)) return true;
             return false;
@@ -58,13 +61,34 @@ export default function App() {
 
         if (exists) return 'duplicate'
 
-        setPatients((prev) => [
-            ...prev,
-            { id: generateId(), name: n, hospitalNumber: h, ward: w, bed: b, note: t },
-        ])
-        setShowAddForm(false) // Hide form on successful add
+        if (editingPatient) {
+            setPatients((prev) => prev.map(p =>
+                p.id === editingPatient.id
+                    ? { ...p, name: n, hospitalNumber: h, ward: w, bed: b, note: t }
+                    : p
+            ))
+            setEditingPatient(null)
+        } else {
+            setPatients((prev) => [
+                ...prev,
+                { id: generateId(), name: n, hospitalNumber: h, ward: w, bed: b, note: t },
+            ])
+            setShowAddForm(false)
+        }
         return true
-    }, [patients])
+    }, [patients, editingPatient])
+
+    const startEditing = useCallback((patient) => {
+        setEditingPatient(patient)
+        setShowAddForm(false)
+        // Scroll to top to ensure form is visible
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, [])
+
+    const cancelForm = useCallback(() => {
+        setShowAddForm(false)
+        setEditingPatient(null)
+    }, [])
 
     const deletePatient = useCallback((id) => {
         setPatients((prev) => prev.filter((p) => p.id !== id))
@@ -109,7 +133,7 @@ export default function App() {
             <Header saveFlash={saveFlash} patientCount={patients.length} />
 
             <main className="flex-1 w-full max-w-2xl mx-auto px-4 pt-6 pb-28">
-                {!showAddForm ? (
+                {!showAddForm && !editingPatient ? (
                     <button
                         className="btn-primary w-full shadow-md mb-6 py-4 text-base"
                         onClick={() => setShowAddForm(true)}
@@ -119,8 +143,9 @@ export default function App() {
                     </button>
                 ) : (
                     <AddPatientForm
-                        onAdd={addPatient}
-                        onCancel={() => setShowAddForm(false)}
+                        initialData={editingPatient}
+                        onAdd={savePatient}
+                        onCancel={cancelForm}
                     />
                 )}
 
@@ -129,6 +154,7 @@ export default function App() {
                 ) : (
                     <PatientList
                         patients={patients}
+                        onEdit={startEditing}
                         onDelete={deletePatient}
                     />
                 )}

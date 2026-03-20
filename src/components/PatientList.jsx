@@ -1,6 +1,6 @@
 import PatientCard from './PatientCard'
 
-export default function PatientList({ patients, onDelete }) {
+export default function PatientList({ patients, onDelete, onEdit }) {
     return (
         <div>
             <div className="flex items-center justify-between mb-3">
@@ -20,6 +20,7 @@ export default function PatientList({ patients, onDelete }) {
                     <PatientCard
                         key={patient.id}
                         patient={patient}
+                        onEdit={onEdit}
                         onDelete={onDelete}
                     />
                 ))}
