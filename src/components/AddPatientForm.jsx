@@ -163,7 +163,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                         <div className="flex items-end gap-2">
                             <button
                                 type="button"
-                                className="btn-secondary px-4 pb-0 text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                                className="btn-secondary px-4 text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                                 onClick={onCancel}
                                 aria-label="Cancel adding patient"
                                 style={{ minHeight: '48px' }}
@@ -173,19 +173,19 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                             <button
                                 id="btn-add-patient"
                                 type="submit"
-                                className="btn-primary px-4 pb-0"
+                                className="btn-primary px-4"
                                 aria-label={initialData ? "Save changes" : "Add patient"}
                                 style={{ minHeight: '48px' }}
                             >
                                 {initialData ? (
                                     <>
                                         <Save size={20} className="sm:hidden" strokeWidth={2.5} />
-                                        <span className="hidden sm:inline flex items-center gap-1"><Save size={18} strokeWidth={2.5} /> Save</span>
+                                        <span className="hidden sm:inline-flex items-center gap-1"><Save size={18} strokeWidth={2.5} /> Save</span>
                                     </>
                                 ) : (
                                     <>
                                         <Plus size={20} className="sm:hidden" strokeWidth={2.5} />
-                                        <span className="hidden sm:inline flex items-center gap-1"><Plus size={18} strokeWidth={2.5} /> Add</span>
+                                        <span className="hidden sm:inline-flex items-center gap-1"><Plus size={18} strokeWidth={2.5} /> Add</span>
                                     </>
                                 )}
                             </button>
