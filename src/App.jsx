@@ -27,6 +27,7 @@ export default function App() {
     const [showConfirmClear, setShowConfirmClear] = useState(false)
     const [showAddForm, setShowAddForm] = useState(false)
     const [editingPatient, setEditingPatient] = useState(null)
+    const [deleteCandidateId, setDeleteCandidateId] = useState(null)
     const [saveFlash, setSaveFlash] = useState(false)
 
     // Persist to localStorage on every change
@@ -90,9 +91,16 @@ export default function App() {
         setEditingPatient(null)
     }, [])
 
-    const deletePatient = useCallback((id) => {
-        setPatients((prev) => prev.filter((p) => p.id !== id))
+    const confirmDeletePatient = useCallback((id) => {
+        setDeleteCandidateId(id)
     }, [])
+
+    const deletePatient = useCallback(() => {
+        if (deleteCandidateId) {
+            setPatients((prev) => prev.filter((p) => p.id !== deleteCandidateId))
+            setDeleteCandidateId(null)
+        }
+    }, [deleteCandidateId])
 
     const clearAll = useCallback(() => {
         setPatients([])
@@ -155,7 +163,7 @@ export default function App() {
                     <PatientList
                         patients={patients}
                         onEdit={startEditing}
-                        onDelete={deletePatient}
+                        onDelete={confirmDeletePatient}
                     />
                 )}
             </main>
@@ -218,6 +226,15 @@ export default function App() {
                     confirmLabel="Yes, Clear All"
                     onConfirm={clearAll}
                     onCancel={() => setShowConfirmClear(false)}
+                />
+            )}
+            {deleteCandidateId && (
+                <ConfirmDialog
+                    title="Remove Patient?"
+                    message={`Are you sure you want to remove ${patients.find(p => p.id === deleteCandidateId)?.name || 'this patient'}? This cannot be undone.`}
+                    confirmLabel="Yes, Remove"
+                    onConfirm={deletePatient}
+                    onCancel={() => setDeleteCandidateId(null)}
                 />
             )}
         </div>
