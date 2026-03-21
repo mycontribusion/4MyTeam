@@ -4,7 +4,7 @@ export default function Header({ saveFlash, patientCount }) {
     return (
         <header className="bg-blue-700 text-white shadow-lg shadow-blue-900/30 sticky top-0 z-30">
             <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
-                {/* Logo + Title */}
+                {/* Logo0 + Title */}
                 <div className="flex items-center gap-3 min-w-0">
                     <div className="flex-shrink-0 bg-white/20 rounded-xl p-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
