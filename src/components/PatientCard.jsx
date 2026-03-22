@@ -13,7 +13,8 @@ export default function PatientCard({ patient, onEdit, onDelete }) {
         'bg-pink-100 text-pink-800 border-pink-200',
         'bg-indigo-100 text-indigo-800 border-indigo-200',
     ]
-    const colorIdx = colorStr.charCodeAt(0) % wardColors.length || 0
+    const hash = String(colorStr).split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0)
+    const colorIdx = Math.abs(hash) % wardColors.length
     const badgeColor = wardColors[colorIdx]
 
     return (

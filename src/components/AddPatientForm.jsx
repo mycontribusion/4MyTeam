@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Plus, Save } from 'lucide-react'
 
-export default function AddPatientForm({ onAdd, onCancel, initialData }) {
+export default function AddPatientForm({ onAdd, onCancel, initialData, initialTeam = 'my_team' }) {
+    const [team, setTeam] = useState(initialTeam)
     const [name, setName] = useState('')
     const [hospitalNumber, setHospitalNumber] = useState('')
     const [ward, setWard] = useState('')
@@ -11,12 +12,14 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
 
     useEffect(() => {
         if (initialData) {
+            setTeam(initialData.team || 'my_team')
             setName(initialData.name || '')
             setHospitalNumber(initialData.hospitalNumber || '')
             setWard(initialData.ward || '')
             setBed(initialData.bed || '')
             setNote(initialData.note || '')
         } else {
+            setTeam(initialTeam)
             setName('')
             setHospitalNumber('')
             setWard('')
@@ -53,7 +56,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
             return
         }
 
-        const result = onAdd({ name, hospitalNumber, ward, bed, note })
+        const result = onAdd({ team, name, hospitalNumber, ward, bed, note })
         if (result === 'duplicate') {
             setError('A patient with this Hospital Number or Ward/Bed already exists.')
             return
@@ -81,6 +84,24 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                 {initialData ? 'Edit Patient' : 'Add Patient'}
             </h2>
             <form id="add-patient-form" onSubmit={handleSubmit}>
+                {/* Team Selector Indicator */}
+                <div className="flex bg-gray-100 p-1 rounded-xl mb-4 sm:mb-5">
+                    <button
+                        type="button"
+                        onClick={() => setTeam('my_team')}
+                        className={`flex-1 text-xs sm:text-sm font-semibold py-2 rounded-lg transition-all ${team === 'my_team' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        My Team
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setTeam('other_team')}
+                        className={`flex-1 text-xs sm:text-sm font-semibold py-2 rounded-lg transition-all ${team === 'other_team' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Other Team
+                    </button>
+                </div>
+
                 <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-4">
 
                     {/* Row 1: Name (Full width) */}

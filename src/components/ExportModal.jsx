@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { X, Copy, Share2, CheckCircle } from 'lucide-react'
+import { X, Copy, Share2, CheckCircle, ClipboardPaste } from 'lucide-react'
 
-export default function ExportModal({ patients, onClose }) {
-    const [copied, setCopied] = useState(false)
+export default function ExportModal({ patients, listName, onClose }) {
+    const [copiedText, setCopiedText] = useState(false)
+    const [copiedData, setCopiedData] = useState(false)
 
     // Compress to minimal JSON: omit empty values to maximize QR capacity
     const compressed = patients.map((p) => {
@@ -47,8 +48,8 @@ export default function ExportModal({ patients, onClose }) {
         // Fallback: copy to clipboard
         try {
             await navigator.clipboard.writeText(shareText)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2500)
+            setCopiedText(true)
+            setTimeout(() => setCopiedText(false), 2500)
         } catch {
             // Clipboard unavailable (very old browser)
             alert(shareText)
@@ -61,7 +62,7 @@ export default function ExportModal({ patients, onClose }) {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-5">
                     <div>
-                        <h2 id="export-title" className="font-bold text-gray-900 text-xl">Export Team List</h2>
+                        <h2 id="export-title" className="font-bold text-gray-900 text-xl">Export: {listName}</h2>
                         <p className="text-gray-500 text-sm mt-0.5">Scan with another device to import</p>
                     </div>
                     <button
@@ -97,31 +98,68 @@ export default function ExportModal({ patients, onClose }) {
                 </div>
 
                 {/* Actions */}
-                <button
-                    id="btn-copy-text"
-                    className="btn-secondary w-full"
-                    onClick={handleCopyOrShare}
-                >
-                    {copied ? (
-                        <>
-                            <CheckCircle size={18} className="text-green-500" />
-                            <span className="text-green-600">Copied to clipboard!</span>
-                        </>
-                    ) : navigator.share ? (
-                        <>
-                            <Share2 size={18} />
-                            Share as Text
-                        </>
-                    ) : (
-                        <>
-                            <Copy size={18} />
-                            Copy as Text
-                        </>
-                    )}
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        id="btn-copy-data"
+                        className="btn-secondary flex-1 px-2"
+                        onClick={async () => {
+                            // Robust fallback for non-HTTPS dev environments or strict mobile Safari
+                            const fallbackCopy = (text) => {
+                                const textArea = document.createElement("textarea");
+                                textArea.value = text;
+                                textArea.style.top = "0";
+                                textArea.style.left = "0";
+                                textArea.style.position = "fixed";
+                                document.body.appendChild(textArea);
+                                textArea.focus();
+                                textArea.select();
+                                try {
+                                    return document.execCommand('copy');
+                                } catch (err) {
+                                    return false;
+                                } finally {
+                                    document.body.removeChild(textArea);
+                                }
+                            }
 
-                <p className="text-center text-xs text-gray-400 mt-3">
-                    Text fallback for devices without camera
+                            try {
+                                if (navigator.clipboard && window.isSecureContext) {
+                                    await navigator.clipboard.writeText(qrData)
+                                } else {
+                                    if (!fallbackCopy(qrData)) throw new Error('Fallback failed')
+                                }
+                                setCopiedData(true)
+                                setTimeout(() => setCopiedData(false), 2000)
+                            } catch {
+                                alert('Could not copy data code. Your browser may block clipboard access outside of secure connections.')
+                            }
+                        }}
+                    >
+                        {copiedData ? (
+                            <span className="inline-flex items-center gap-1.5 text-green-600"><CheckCircle size={16} /> Copied!</span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5"><ClipboardPaste size={16} /> Copy Code</span>
+                        )}
+                    </button>
+
+                    <button
+                        id="btn-copy-text"
+                        className="btn-secondary flex-1 px-2"
+                        onClick={handleCopyOrShare}
+                    >
+                        {copiedText ? (
+                            <span className="inline-flex items-center gap-1.5 text-green-600"><CheckCircle size={16} /> Copied!</span>
+                        ) : navigator.share ? (
+                            <span className="inline-flex items-center gap-1.5"><Share2 size={16} /> Share Text</span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5"><Copy size={16} /> Copy Text</span>
+                        )}
+                    </button>
+                </div>
+
+                <p className="text-center text-xs text-gray-400 mt-4">
+                    <strong>Copy Code</strong> to paste into another device.<br />
+                    <strong>Share Text</strong> to send readable info via WhatsApp.
                 </p>
             </div>
         </div>
