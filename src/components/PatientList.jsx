@@ -39,21 +39,17 @@ export default function PatientList({ patients, onDelete, onEdit }) {
 
                 {/* Sort controls */}
                 <div className="flex items-center gap-1.5">
-                    <ArrowUpDown size={13} className="text-gray-400" />
-                    <div className="flex items-center gap-1">
+                    <ArrowUpDown size={13} className="text-gray-400 flex-shrink-0" />
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="text-xs text-gray-600 font-medium bg-gray-100 hover:bg-gray-200 border-0 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        aria-label="Sort patients by"
+                    >
                         {SORT_OPTIONS.map((opt) => (
-                            <button
-                                key={opt.value}
-                                onClick={() => setSortBy(opt.value)}
-                                className={`text-xs px-2 py-1 rounded-lg font-medium transition-colors ${sortBy === opt.value
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                                    }`}
-                            >
-                                {opt.label}
-                            </button>
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
-                    </div>
+                    </select>
                 </div>
             </div>
 

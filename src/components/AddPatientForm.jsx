@@ -76,13 +76,13 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
     }
 
     return (
-        <div className="card p-4 mb-6">
-            <h2 className="font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wider">
+        <div className="card p-3 sm:p-4 mb-6">
+            <h2 className="hidden sm:block font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wider">
                 {initialData ? 'Edit Patient' : 'Add Patient'}
             </h2>
             <form id="add-patient-form" onSubmit={handleSubmit}>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                    <div className="col-span-2 md:col-span-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-2 sm:mb-3">
+                    <div className="col-span-1 md:col-span-2">
                         <label htmlFor="input-name" className="block text-xs font-semibold text-gray-500 mb-1.5">
                             Patient Name
                         </label>
@@ -101,7 +101,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                             autoComplete="off"
                         />
                     </div>
-                    <div className="col-span-2 md:col-span-2">
+                    <div className="col-span-1 md:col-span-2">
                         <label htmlFor="input-hospnum" className="block text-xs font-semibold text-gray-500 mb-1.5">
                             Hospital Number
                         </label>
