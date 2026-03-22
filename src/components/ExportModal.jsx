@@ -25,8 +25,9 @@ export default function ExportModal({ patients, onClose }) {
             if (p.hospitalNumber) parts.push(`Hosp: ${p.hospitalNumber}`)
             if (p.ward) parts.push(`Ward: ${p.ward}`)
             if (p.bed) parts.push(`Bed: ${p.bed}`)
-            if (p.note) parts.push(`Note: ${p.note}`)
-            return parts.join(' | ')
+            let line = parts.join(' | ')
+            if (p.note) line += `\nNote: ${p.note}`
+            return line
         })
         .join('\n')
 

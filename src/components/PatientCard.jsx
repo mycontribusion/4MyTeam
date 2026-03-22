@@ -51,7 +51,7 @@ export default function PatientCard({ patient, onEdit, onDelete }) {
                     {(!name && !hospitalNumber) && (
                         <div className="text-sm font-medium text-gray-500 italic">No name provided</div>
                     )}
-                    {note && <div className="text-sm text-gray-600 mt-1 line-clamp-2">{note}</div>}
+                    {note && <div className="text-sm text-gray-600 mt-1 line-clamp-4" style={{ whiteSpace: 'pre-wrap' }}>{note}</div>}
                 </div>
             </div>
 

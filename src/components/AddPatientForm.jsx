@@ -143,20 +143,21 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                         />
                     </div>
 
-                    <div className="col-span-2 md:col-span-4 flex gap-3">
+                    <div className="col-span-2 md:col-span-4 flex gap-3 items-end">
                         <div className="flex-1">
                             <label htmlFor="input-note" className="block text-xs font-semibold text-gray-500 mb-1.5">
-                                Note (Optional)
+                                Note
                             </label>
-                            <input
+                            <textarea
                                 id="input-note"
                                 ref={noteRef}
-                                type="text"
-                                className="input-field text-left text-sm"
+                                rows={2}
+                                className="input-field text-left text-sm resize-none"
                                 placeholder="Requires fasting..."
                                 value={note}
                                 onChange={(e) => { setNote(e.target.value); setError('') }}
                                 autoComplete="off"
+                                style={{ minHeight: '48px' }}
                             />
                         </div>
 
