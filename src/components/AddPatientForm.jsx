@@ -81,83 +81,96 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                 {initialData ? 'Edit Patient' : 'Add Patient'}
             </h2>
             <form id="add-patient-form" onSubmit={handleSubmit}>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-2 sm:mb-3">
-                    <div className="col-span-1 md:col-span-2">
-                        <label htmlFor="input-name" className="block text-xs font-semibold text-gray-500 mb-1.5">
-                            Patient Name
-                        </label>
-                        <input
-                            id="input-name"
-                            type="text"
-                            className="input-field text-left font-medium text-base"
-                            placeholder="John Doe"
-                            value={name}
-                            onChange={(e) => {
-                                const val = e.target.value.replace(/(?:^|\s)\S/g, (c) => c.toUpperCase())
-                                setName(val)
-                                setError('')
-                            }}
-                            onKeyDown={(e) => handleKeyDown(e, hospNumRef)}
-                            autoComplete="off"
-                        />
-                    </div>
-                    <div className="col-span-1 md:col-span-2">
-                        <label htmlFor="input-hospnum" className="block text-xs font-semibold text-gray-500 mb-1.5">
-                            Hospital Number
-                        </label>
-                        <input
-                            id="input-hospnum"
-                            ref={hospNumRef}
-                            type="text"
-                            className="input-field text-center font-bold text-base"
-                            placeholder="H-123456"
-                            value={hospitalNumber}
-                            onChange={(e) => { setHospitalNumber(e.target.value); setError('') }}
-                            onKeyDown={(e) => handleKeyDown(e, wardRef)}
-                            autoComplete="off"
-                        />
+                <div className="flex flex-col gap-2 sm:gap-3 mb-2 sm:mb-3">
+
+                    {/* Row 1: Name (60%) + HospNum (40%) */}
+                    <div className="flex gap-2 sm:gap-3">
+                        <div className="min-w-0" style={{ flex: '3 1 0%' }}>
+                            <label htmlFor="input-name" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                                Patient Name
+                            </label>
+                            <input
+                                id="input-name"
+                                type="text"
+                                className="input-field text-left font-medium text-sm"
+                                placeholder="John Doe"
+                                value={name}
+                                onChange={(e) => {
+                                    if (!e.nativeEvent.isComposing) {
+                                        const val = e.target.value.replace(/(?:^|\s)\S/g, (c) => c.toUpperCase())
+                                        setName(val)
+                                    } else {
+                                        setName(e.target.value)
+                                    }
+                                    setError('')
+                                }}
+                                onKeyDown={(e) => handleKeyDown(e, hospNumRef)}
+                                autoCapitalize="words"
+                                autoComplete="off"
+                            />
+                        </div>
+                        <div className="min-w-0" style={{ flex: '2 1 0%' }}>
+                            <label htmlFor="input-hospnum" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                                Hospital Number
+                            </label>
+                            <input
+                                id="input-hospnum"
+                                ref={hospNumRef}
+                                type="text"
+                                className="input-field text-center font-bold text-sm"
+                                placeholder="H-123456"
+                                value={hospitalNumber}
+                                onChange={(e) => { setHospitalNumber(e.target.value); setError('') }}
+                                onKeyDown={(e) => handleKeyDown(e, wardRef)}
+                                autoComplete="off"
+                            />
+                        </div>
                     </div>
 
-                    <div className="col-span-1 md:col-span-1">
-                        <label htmlFor="input-ward" className="block text-xs font-semibold text-gray-500 mb-1.5">
-                            Ward
-                        </label>
-                        <input
-                            id="input-ward"
-                            ref={wardRef}
-                            type="text"
-                            className="input-field text-center font-bold uppercase text-lg tracking-wider"
-                            placeholder="A1"
-                            value={ward}
-                            onChange={(e) => { setWard(e.target.value); setError('') }}
-                            onKeyDown={(e) => handleKeyDown(e, bedRef)}
-                            maxLength={10}
-                            autoCapitalize="characters"
-                            autoComplete="off"
-                            spellCheck={false}
-                        />
-                    </div>
-                    <div className="col-span-1 md:col-span-1">
-                        <label htmlFor="input-bed" className="block text-xs font-semibold text-gray-500 mb-1.5">
-                            Bed No.
-                        </label>
-                        <input
-                            id="input-bed"
-                            ref={bedRef}
-                            type="text"
-                            className="input-field text-center font-bold text-lg"
-                            placeholder="12"
-                            value={bed}
-                            onChange={(e) => { setBed(e.target.value); setError('') }}
-                            onKeyDown={(e) => handleKeyDown(e, noteRef)}
-                            maxLength={10}
-                            autoComplete="off"
-                            spellCheck={false}
-                            inputMode="text"
-                        />
+                    {/* Row 2: Ward + Bed (equal) */}
+                    <div className="flex gap-2 sm:gap-3">
+                        <div className="flex-1 min-w-0">
+                            <label htmlFor="input-ward" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                                Ward
+                            </label>
+                            <input
+                                id="input-ward"
+                                ref={wardRef}
+                                type="text"
+                                className="input-field text-center font-bold uppercase text-lg tracking-wider"
+                                placeholder="A1"
+                                value={ward}
+                                onChange={(e) => { setWard(e.target.value); setError('') }}
+                                onKeyDown={(e) => handleKeyDown(e, bedRef)}
+                                maxLength={10}
+                                autoCapitalize="characters"
+                                autoComplete="off"
+                                spellCheck={false}
+                            />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <label htmlFor="input-bed" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                                Bed No.
+                            </label>
+                            <input
+                                id="input-bed"
+                                ref={bedRef}
+                                type="text"
+                                className="input-field text-center font-bold text-lg"
+                                placeholder="12"
+                                value={bed}
+                                onChange={(e) => { setBed(e.target.value); setError('') }}
+                                onKeyDown={(e) => handleKeyDown(e, noteRef)}
+                                maxLength={10}
+                                autoComplete="off"
+                                spellCheck={false}
+                                inputMode="text"
+                            />
+                        </div>
                     </div>
 
-                    <div className="col-span-2 md:col-span-4 flex gap-3 items-end">
+                    {/* Row 3: Note + Buttons */}
+                    <div className="flex gap-3 items-end">
                         <div className="flex-1">
                             <label htmlFor="input-note" className="block text-xs font-semibold text-gray-500 mb-1.5">
                                 Note
@@ -207,6 +220,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                         </div>
                     </div>
                 </div>
+
 
                 {error && (
                     <div

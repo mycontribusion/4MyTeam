@@ -41,7 +41,7 @@ export default function PatientCard({ patient, onEdit, onDelete }) {
                 {/* Patient Info */}
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        {name && <div className="text-lg font-bold text-gray-900 leading-tight truncate">{name}</div>}
+                        {name && <div className="text-lg font-bold text-gray-900 leading-tight overflow-x-auto whitespace-nowrap">{name}</div>}
                         {hospitalNumber && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis">
                                 {hospitalNumber}
