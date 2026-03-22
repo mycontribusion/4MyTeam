@@ -81,35 +81,39 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                 {initialData ? 'Edit Patient' : 'Add Patient'}
             </h2>
             <form id="add-patient-form" onSubmit={handleSubmit}>
-                <div className="flex flex-col gap-2 sm:gap-3 mb-2 sm:mb-3">
+                <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-4">
 
-                    {/* Row 1: Name (60%) + HospNum (40%) */}
+                    {/* Row 1: Name (Full width) */}
+                    <div>
+                        <label htmlFor="input-name" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                            Patient Name
+                        </label>
+                        <input
+                            id="input-name"
+                            type="text"
+                            className="input-field text-left font-medium text-sm"
+                            placeholder="John Doe"
+                            value={name}
+                            onChange={(e) => {
+                                // Strip out any numbers
+                                let val = e.target.value.replace(/[0-9]/g, '')
+                                if (!e.nativeEvent.isComposing) {
+                                    val = val.replace(/(?:^|\s)\S/g, (c) => c.toUpperCase())
+                                    setName(val)
+                                } else {
+                                    setName(val)
+                                }
+                                setError('')
+                            }}
+                            onKeyDown={(e) => handleKeyDown(e, hospNumRef)}
+                            autoCapitalize="words"
+                            autoComplete="off"
+                        />
+                    </div>
+
+                    {/* Row 2: HospNum (45%) + Ward (35%) + Bed (20%) */}
                     <div className="flex gap-2 sm:gap-3">
-                        <div className="min-w-0" style={{ flex: '3 1 0%' }}>
-                            <label htmlFor="input-name" className="block text-xs font-semibold text-gray-500 mb-1.5">
-                                Patient Name
-                            </label>
-                            <input
-                                id="input-name"
-                                type="text"
-                                className="input-field text-left font-medium text-sm"
-                                placeholder="John Doe"
-                                value={name}
-                                onChange={(e) => {
-                                    if (!e.nativeEvent.isComposing) {
-                                        const val = e.target.value.replace(/(?:^|\s)\S/g, (c) => c.toUpperCase())
-                                        setName(val)
-                                    } else {
-                                        setName(e.target.value)
-                                    }
-                                    setError('')
-                                }}
-                                onKeyDown={(e) => handleKeyDown(e, hospNumRef)}
-                                autoCapitalize="words"
-                                autoComplete="off"
-                            />
-                        </div>
-                        <div className="min-w-0" style={{ flex: '2 1 0%' }}>
+                        <div className="min-w-0" style={{ flex: '45 1 0%' }}>
                             <label htmlFor="input-hospnum" className="block text-xs font-semibold text-gray-500 mb-1.5">
                                 Hospital Number
                             </label>
@@ -125,11 +129,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                                 autoComplete="off"
                             />
                         </div>
-                    </div>
-
-                    {/* Row 2: Ward + Bed (equal) */}
-                    <div className="flex gap-2 sm:gap-3">
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0" style={{ flex: '35 1 0%' }}>
                             <label htmlFor="input-ward" className="block text-xs font-semibold text-gray-500 mb-1.5">
                                 Ward
                             </label>
@@ -137,7 +137,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                                 id="input-ward"
                                 ref={wardRef}
                                 type="text"
-                                className="input-field text-center font-bold uppercase text-lg tracking-wider"
+                                className="input-field text-center font-bold uppercase text-sm tracking-wider"
                                 placeholder="A1"
                                 value={ward}
                                 onChange={(e) => { setWard(e.target.value); setError('') }}
@@ -148,15 +148,15 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                                 spellCheck={false}
                             />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0" style={{ flex: '20 1 0%' }}>
                             <label htmlFor="input-bed" className="block text-xs font-semibold text-gray-500 mb-1.5">
-                                Bed No.
+                                Bed
                             </label>
                             <input
                                 id="input-bed"
                                 ref={bedRef}
                                 type="text"
-                                className="input-field text-center font-bold text-lg"
+                                className="input-field text-center font-bold text-sm"
                                 placeholder="12"
                                 value={bed}
                                 onChange={(e) => { setBed(e.target.value); setError('') }}
@@ -169,55 +169,52 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                         </div>
                     </div>
 
-                    {/* Row 3: Note + Buttons */}
-                    <div className="flex gap-3 items-end">
-                        <div className="flex-1">
-                            <label htmlFor="input-note" className="block text-xs font-semibold text-gray-500 mb-1.5">
-                                Note
-                            </label>
-                            <textarea
-                                id="input-note"
-                                ref={noteRef}
-                                rows={1}
-                                className="input-field text-left text-sm resize-none"
-                                placeholder="Requires fasting..."
-                                value={note}
-                                onChange={(e) => { setNote(e.target.value); setError(''); autoGrow(e.target) }}
-                                autoComplete="off"
-                                style={{ minHeight: '40px', maxHeight: '96px', overflowY: 'auto' }}
-                            />
-                        </div>
+                    {/* Row 3: Note (Full width) */}
+                    <div>
+                        <label htmlFor="input-note" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                            Note
+                        </label>
+                        <textarea
+                            id="input-note"
+                            ref={noteRef}
+                            rows={1}
+                            className="input-field text-left text-sm resize-none"
+                            placeholder="Requires fasting..."
+                            value={note}
+                            onChange={(e) => { setNote(e.target.value); setError(''); autoGrow(e.target) }}
+                            autoComplete="off"
+                            style={{ minHeight: '40px', maxHeight: '96px', overflowY: 'auto' }}
+                        />
+                    </div>
 
-                        <div className="flex items-end gap-2">
-                            <button
-                                type="button"
-                                className="btn-secondary px-4 text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-                                onClick={onCancel}
-                                aria-label="Close patient form"
-                                style={{ minHeight: '48px' }}
-                            >
-                                Close
-                            </button>
-                            <button
-                                id="btn-add-patient"
-                                type="submit"
-                                className="btn-primary px-4"
-                                aria-label={initialData ? "Save changes" : "Add patient"}
-                                style={{ minHeight: '48px' }}
-                            >
-                                {initialData ? (
-                                    <>
-                                        <Save size={20} className="sm:hidden" strokeWidth={2.5} />
-                                        <span className="hidden sm:inline-flex items-center gap-1"><Save size={18} strokeWidth={2.5} /> Save</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Plus size={20} className="sm:hidden" strokeWidth={2.5} />
-                                        <span className="hidden sm:inline-flex items-center gap-1"><Plus size={18} strokeWidth={2.5} /> Add</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
+                    {/* Row 4: Buttons (Right aligned) */}
+                    <div className="flex justify-end gap-2 mt-1">
+                        <button
+                            type="button"
+                            className="btn-secondary px-4 text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                            onClick={onCancel}
+                            aria-label="Close patient form"
+                            style={{ minHeight: '40px', fontSize: '0.875rem' }}
+                        >
+                            Close
+                        </button>
+                        <button
+                            id="btn-add-patient"
+                            type="submit"
+                            className="btn-primary px-5"
+                            aria-label={initialData ? "Save changes" : "Add patient"}
+                            style={{ minHeight: '40px', fontSize: '0.875rem' }}
+                        >
+                            {initialData ? (
+                                <>
+                                    <span className="inline-flex items-center gap-1"><Save size={16} strokeWidth={2.5} /> Save</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="inline-flex items-center gap-1"><Plus size={16} strokeWidth={2.5} /> Add</span>
+                                </>
+                            )}
+                        </button>
                     </div>
                 </div>
 
