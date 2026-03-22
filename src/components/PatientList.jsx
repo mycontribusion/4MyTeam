@@ -1,22 +1,68 @@
+import { useState, useMemo } from 'react'
 import PatientCard from './PatientCard'
+import { ArrowUpDown } from 'lucide-react'
+
+const SORT_OPTIONS = [
+    { value: 'none', label: 'Default' },
+    { value: 'ward', label: 'Ward' },
+    { value: 'bed', label: 'Bed' },
+    { value: 'name', label: 'Name' },
+    { value: 'hospnum', label: 'Hosp No.' },
+]
 
 export default function PatientList({ patients, onDelete, onEdit }) {
+    const [sortBy, setSortBy] = useState('none')
+
+    const sorted = useMemo(() => {
+        if (sortBy === 'none') return patients
+        return [...patients].sort((a, b) => {
+            let av = '', bv = ''
+            if (sortBy === 'ward') { av = a.ward || ''; bv = b.ward || '' }
+            if (sortBy === 'bed') { av = a.bed || ''; bv = b.bed || '' }
+            if (sortBy === 'name') { av = a.name || ''; bv = b.name || '' }
+            if (sortBy === 'hospnum') { av = a.hospitalNumber || ''; bv = b.hospitalNumber || '' }
+            return av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' })
+        })
+    }, [patients, sortBy])
+
     return (
         <div>
             <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-gray-500 text-sm uppercase tracking-wider">
-                    Patient List
-                </h2>
-                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full">
-                    {patients.length}
-                </span>
+                <div className="flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-500 text-sm uppercase tracking-wider">
+                        Patient List
+                    </h2>
+                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full">
+                        {patients.length}
+                    </span>
+                </div>
+
+                {/* Sort controls */}
+                <div className="flex items-center gap-1.5">
+                    <ArrowUpDown size={13} className="text-gray-400" />
+                    <div className="flex items-center gap-1">
+                        {SORT_OPTIONS.map((opt) => (
+                            <button
+                                key={opt.value}
+                                onClick={() => setSortBy(opt.value)}
+                                className={`text-xs px-2 py-1 rounded-lg font-medium transition-colors ${sortBy === opt.value
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                    }`}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
+
             <div
                 role="list"
                 className="flex flex-col gap-3"
                 aria-label="Patient list"
             >
-                {patients.map((patient) => (
+                {sorted.map((patient) => (
                     <PatientCard
                         key={patient.id}
                         patient={patient}

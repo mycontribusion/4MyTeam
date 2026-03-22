@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Plus, Save } from 'lucide-react'
 
 export default function AddPatientForm({ onAdd, onCancel, initialData }) {
@@ -30,6 +30,16 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
     const bedRef = useRef(null)
     const noteRef = useRef(null)
 
+    const autoGrow = useCallback((el) => {
+        if (!el) return
+        el.style.height = 'auto'
+        el.style.height = Math.min(el.scrollHeight, 96) + 'px'
+    }, [])
+
+    useEffect(() => {
+        autoGrow(noteRef.current)
+    }, [note, autoGrow])
+
     const handleSubmit = (e) => {
         e.preventDefault()
         setError('')
@@ -45,7 +55,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
 
         const result = onAdd({ name, hospitalNumber, ward, bed, note })
         if (result === 'duplicate') {
-            setError('A patient with this Hospital Number (or identical details) already exists.')
+            setError('A patient with this Hospital Number or Ward/Bed already exists.')
             return
         }
         if (result) {
@@ -82,7 +92,11 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                             className="input-field text-left font-medium text-base"
                             placeholder="John Doe"
                             value={name}
-                            onChange={(e) => { setName(e.target.value); setError('') }}
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/(?:^|\s)\S/g, (c) => c.toUpperCase())
+                                setName(val)
+                                setError('')
+                            }}
                             onKeyDown={(e) => handleKeyDown(e, hospNumRef)}
                             autoComplete="off"
                         />
@@ -151,13 +165,13 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                             <textarea
                                 id="input-note"
                                 ref={noteRef}
-                                rows={2}
+                                rows={1}
                                 className="input-field text-left text-sm resize-none"
                                 placeholder="Requires fasting..."
                                 value={note}
-                                onChange={(e) => { setNote(e.target.value); setError('') }}
+                                onChange={(e) => { setNote(e.target.value); setError(''); autoGrow(e.target) }}
                                 autoComplete="off"
-                                style={{ minHeight: '48px' }}
+                                style={{ minHeight: '40px', maxHeight: '96px', overflowY: 'auto' }}
                             />
                         </div>
 
@@ -166,10 +180,10 @@ export default function AddPatientForm({ onAdd, onCancel, initialData }) {
                                 type="button"
                                 className="btn-secondary px-4 text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                                 onClick={onCancel}
-                                aria-label="Cancel adding patient"
+                                aria-label="Close patient form"
                                 style={{ minHeight: '48px' }}
                             >
-                                Cancel
+                                Close
                             </button>
                             <button
                                 id="btn-add-patient"

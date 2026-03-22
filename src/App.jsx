@@ -51,12 +51,12 @@ export default function App() {
 
         if (!w && !h && !n) return false
 
-        // Duplicate check
+        // Duplicate check: same hospital number OR same ward+bed combo
         const exists = patients.some((p) => {
             if (editingPatient && p.id === editingPatient.id) return false;
 
             if (h && p.hospitalNumber === h) return true;
-            if (!h && p.name === n && p.ward === w && p.bed === b && (n || w || b)) return true;
+            if (w && b && p.ward === w && p.bed === b) return true;
             return false;
         })
 
@@ -74,7 +74,7 @@ export default function App() {
                 ...prev,
                 { id: generateId(), name: n, hospitalNumber: h, ward: w, bed: b, note: t },
             ])
-            setShowAddForm(false)
+            // Form stays open so the user can add the next patient
         }
         return true
     }, [patients, editingPatient])
