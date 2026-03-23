@@ -6,6 +6,7 @@ import ExportModal from './components/ExportModal'
 import ScannerComponent from './components/ScannerComponent'
 import ConfirmDialog from './components/ConfirmDialog'
 import EmptyState from './components/EmptyState'
+import ReviewDuplicatesModal from './components/ReviewDuplicatesModal'
 
 const STORAGE_KEY = '4myteam_patients'
 
@@ -30,6 +31,7 @@ export default function App() {
     const [editingPatient, setEditingPatient] = useState(null)
     const [deleteCandidateId, setDeleteCandidateId] = useState(null)
     const [saveFlash, setSaveFlash] = useState(false)
+    const [pendingImport, setPendingImport] = useState(null)
 
     // Persist to localStorage on every change
     useEffect(() => {
@@ -103,6 +105,18 @@ export default function App() {
         }
     }, [deleteCandidateId])
 
+    const toggleReview = useCallback((id, isReviewed) => {
+        setPatients(prev => prev.map(p =>
+            p.id === id ? { ...p, reviewed: isReviewed } : p
+        ))
+    }, [])
+
+    const resetReviews = useCallback(() => {
+        setPatients(prev => prev.map(p =>
+            (p.team || 'my_team') === activeTab ? { ...p, reviewed: false } : p
+        ))
+    }, [activeTab])
+
     const clearAll = useCallback(() => {
         setPatients(prev => prev.filter(p => (p.team || 'my_team') !== activeTab))
         setShowConfirmClear(false)
@@ -110,33 +124,67 @@ export default function App() {
 
     // Merge imported patients, deduplicate
     const importPatients = useCallback((incoming) => {
-        setPatients((prev) => {
-            const existingHospNums = new Set(prev.filter(p => p.hospitalNumber).map(p => p.hospitalNumber))
-            const existingCombos = new Set(prev.filter(p => !p.hospitalNumber).map(p => `${p.name}|${p.ward}|${p.bed}`))
+        const conflicts = [];
+        const newOnes = [];
+        const tempHospNums = new Set(patients.filter(p => p.hospitalNumber).map(p => p.hospitalNumber));
+        const tempCombos = new Set(patients.filter(p => !p.hospitalNumber).map(p => `${p.name}|${p.ward}|${p.bed}`));
 
-            const newOnes = incoming
-                .map((p) => ({
-                    id: generateId(),
-                    team: p.team || activeTab,
-                    name: (p.n || p.name || '').trim(),
-                    hospitalNumber: (p.h || p.hospitalNumber || '').trim(),
-                    ward: (p.w || p.ward || '').trim().toUpperCase(),
-                    bed: (p.b || p.bed || '').trim(),
-                    note: (p.t || p.note || '').trim(),
-                }))
-                .filter((p) => {
-                    if (!p.name && !p.hospitalNumber && !p.ward) return false;
-                    if (p.hospitalNumber && existingHospNums.has(p.hospitalNumber)) return false;
-                    if (!p.hospitalNumber && existingCombos.has(`${p.name}|${p.ward}|${p.bed}`)) return false;
+        incoming.forEach(_p => {
+            const p = {
+                id: generateId(),
+                team: _p.team || activeTab,
+                name: (_p.n || _p.name || '').trim(),
+                hospitalNumber: (_p.h || _p.hospitalNumber || '').trim(),
+                ward: (_p.w || _p.ward || '').trim().toUpperCase(),
+                bed: (_p.b || _p.bed || '').trim(),
+                note: (_p.t || _p.note || '').trim(),
+            };
+            if (!p.name && !p.hospitalNumber && !p.ward) return;
 
-                    if (p.hospitalNumber) existingHospNums.add(p.hospitalNumber);
-                    else existingCombos.add(`${p.name}|${p.ward}|${p.bed}`);
-                    return true;
-                })
-            return [...prev, ...newOnes]
-        })
-        setShowScanner(false)
-    }, [activeTab])
+            let existingMatch = null;
+            if (p.hospitalNumber && tempHospNums.has(p.hospitalNumber)) {
+                existingMatch = patients.find(ex => ex.hospitalNumber === p.hospitalNumber) || p;
+            } else if (!p.hospitalNumber && tempCombos.has(`${p.name}|${p.ward}|${p.bed}`)) {
+                existingMatch = patients.find(ex => ex.name === p.name && ex.ward === p.ward && ex.bed === p.bed) || p;
+            }
+
+            if (existingMatch) {
+                conflicts.push({ imported: p, existing: existingMatch });
+            } else {
+                newOnes.push(p);
+                if (p.hospitalNumber) tempHospNums.add(p.hospitalNumber);
+                else tempCombos.add(`${p.name}|${p.ward}|${p.bed}`);
+            }
+        });
+
+        if (conflicts.length > 0) {
+            setPendingImport({ conflicts, newOnes });
+        } else {
+            setPatients(prev => [...prev, ...newOnes]);
+        }
+        setShowScanner(false);
+    }, [activeTab, patients]);
+
+    const resolveImport = useCallback((resolvedConflicts, newOnes) => {
+        setPatients(prev => {
+            let next = [...prev];
+            resolvedConflicts.forEach(res => {
+                if (res.action === 'new') {
+                    next.push(res.imported);
+                } else if (res.action === 'update') {
+                    const idx = next.findIndex(p => p.id === res.existing.id);
+                    if (idx !== -1) {
+                        next[idx] = { ...res.existing, ...res.imported, id: res.existing.id };
+                    } else {
+                        next.push(res.imported);
+                    }
+                }
+            });
+            next.push(...newOnes);
+            return next;
+        });
+        setPendingImport(null);
+    }, []);
 
     const activePatients = patients.filter(p => (p.team || 'my_team') === activeTab)
     const myTeamCount = patients.filter(p => (p.team || 'my_team') === 'my_team').length
@@ -195,6 +243,8 @@ export default function App() {
                         patients={activePatients}
                         onEdit={startEditing}
                         onDelete={confirmDeletePatient}
+                        onReview={toggleReview}
+                        onResetReviews={resetReviews}
                     />
                 )}
             </main>
@@ -271,6 +321,13 @@ export default function App() {
                     confirmLabel="Yes, Remove"
                     onConfirm={deletePatient}
                     onCancel={() => setDeleteCandidateId(null)}
+                />
+            )}
+            {pendingImport && (
+                <ReviewDuplicatesModal
+                    pendingImport={pendingImport}
+                    onResolve={resolveImport}
+                    onCancel={() => setPendingImport(null)}
                 />
             )}
         </div>
