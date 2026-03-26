@@ -81,9 +81,9 @@ export default function ExportModal({ patients, listName, onClose }) {
                         <QRCodeSVG
                             id="qr-code-svg"
                             value={qrData}
-                            size={220}
-                            level="M"
-                            includeMargin={false}
+                            size={260}
+                            level="Q"
+                            includeMargin={true}
                             fgColor="#111827"
                             bgColor="#ffffff"
                         />

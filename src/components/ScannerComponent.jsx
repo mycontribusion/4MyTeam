@@ -26,8 +26,8 @@ export default function ScannerComponent({ onImport, listName, onClose }) {
                 await html5QrCode.start(
                     { facingMode: 'environment' },
                     {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
+                        fps: 20,
+                        qrbox: { width: 280, height: 280 },
                         aspectRatio: 1.0,
                     },
                     (decodedText) => {
@@ -131,8 +131,13 @@ export default function ScannerComponent({ onImport, listName, onClose }) {
                 {mode === 'camera' ? (
                     <>
                         {/* QR Viewer */}
-                        <div className="rounded-2xl overflow-hidden bg-gray-900 mb-4" style={{ minHeight: 260 }}>
+                        <div className="rounded-2xl overflow-hidden bg-gray-900 mb-4 relative" style={{ minHeight: 280 }}>
                             <div id="qr-reader" className="w-full" />
+                            {status === 'scanning' && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div className="w-48 h-48 border-2 border-blue-400/50 rounded-3xl scan-zone-pulse" />
+                                </div>
+                            )}
                         </div>
 
                         {/* Status */}
