@@ -6,8 +6,19 @@ export default function ExportModal({ patients, listName, onClose }) {
     const [copiedText, setCopiedText] = useState(false)
     const [copiedData, setCopiedData] = useState(false)
 
-    // Compress to minimal JSON: omit empty values to maximize QR capacity
-    const compressed = patients.map((p) => {
+    // 1. QR Data: Optimized for scanning (excludes notes to keep QR density low)
+    const qrCompressed = patients.map((p) => {
+        const obj = {}
+        if (p.ward) obj.w = p.ward
+        if (p.bed) obj.b = p.bed
+        if (p.name) obj.n = p.name
+        if (p.hospitalNumber) obj.h = p.hospitalNumber
+        return obj
+    })
+    const qrData = JSON.stringify(qrCompressed)
+
+    // 2. Full Data: Includes everything for Copy/Paste sharing
+    const fullCompressed = patients.map((p) => {
         const obj = {}
         if (p.ward) obj.w = p.ward
         if (p.bed) obj.b = p.bed
@@ -16,7 +27,7 @@ export default function ExportModal({ patients, listName, onClose }) {
         if (p.note) obj.t = p.note
         return obj
     })
-    const qrData = JSON.stringify(compressed)
+    const fullData = JSON.stringify(fullCompressed)
 
     // Human-readable text
     const textData = patients
@@ -124,9 +135,9 @@ export default function ExportModal({ patients, listName, onClose }) {
 
                             try {
                                 if (navigator.clipboard && window.isSecureContext) {
-                                    await navigator.clipboard.writeText(qrData)
+                                    await navigator.clipboard.writeText(fullData)
                                 } else {
-                                    if (!fallbackCopy(qrData)) throw new Error('Fallback failed')
+                                    if (!fallbackCopy(fullData)) throw new Error('Fallback failed')
                                 }
                                 setCopiedData(true)
                                 setTimeout(() => setCopiedData(false), 2000)
@@ -157,7 +168,11 @@ export default function ExportModal({ patients, listName, onClose }) {
                     </button>
                 </div>
 
-                <p className="text-center text-xs text-gray-400 mt-4">
+                <p className="text-center text-[10px] text-gray-400 mt-2 mb-2 px-6 italic">
+                    Note: QR excludes notes for faster scanning.
+                </p>
+
+                <p className="text-center text-xs text-gray-400 mt-2">
                     <strong>Copy Code</strong> to paste into another device.<br />
                     <strong>Share Text</strong> to send readable info via WhatsApp.
                 </p>
