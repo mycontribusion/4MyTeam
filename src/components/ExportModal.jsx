@@ -89,15 +89,24 @@ export default function ExportModal({ patients, listName, onClose }) {
                 {/* QR Code */}
                 <div className="flex justify-center mb-5">
                     <div className="bg-white p-4 rounded-2xl border-2 border-gray-100 shadow-sm inline-block">
-                        <QRCodeSVG
-                            id="qr-code-svg"
-                            value={qrData}
-                            size={260}
-                            level="Q"
-                            includeMargin={true}
-                            fgColor="#111827"
-                            bgColor="#ffffff"
-                        />
+                        {qrData.length > 2300 ? (
+                            <div className="w-[260px] h-[260px] flex items-center justify-center text-center p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">
+                                <div>
+                                    <p className="mb-2">⚠️ Too many patients to generate a scanable QR code.</p>
+                                    <p className="text-[10px] opacity-70">Please use "Copy Code" or "Share Text" instead.</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <QRCodeSVG
+                                id="qr-code-svg"
+                                value={qrData}
+                                size={260}
+                                level="L"
+                                includeMargin={false}
+                                fgColor="#111827"
+                                bgColor="#ffffff"
+                            />
+                        )}
                     </div>
                 </div>
 
