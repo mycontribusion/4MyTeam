@@ -119,14 +119,14 @@ export default function ExportModal({ patients, listName, onClose }) {
                     <div className="flex justify-center mb-3">
                         <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm inline-block">
                             {qrData.length > 2300 ? (
-                                <div className="w-[180px] h-[180px] flex items-center justify-center text-center p-3 bg-red-50 text-red-600 rounded-lg text-xs font-medium border border-red-100">
+                                <div className="w-[240px] h-[240px] flex items-center justify-center text-center p-3 bg-red-50 text-red-600 rounded-lg text-xs font-medium border border-red-100">
                                     <p>⚠️ List too large for QR. Use Copy Code instead.</p>
                                 </div>
                             ) : (
                                 <QRCodeSVG
                                     id="qr-code-svg"
                                     value={qrData}
-                                    size={180}
+                                    size={240}
                                     level="L"
                                     includeMargin={false}
                                     fgColor="#111827"
@@ -135,23 +135,19 @@ export default function ExportModal({ patients, listName, onClose }) {
                             )}
                         </div>
                     </div>
-                    <p className="text-center text-[10px] text-gray-500 font-medium">
-                        Scan to sync with another device
-                    </p>
                 </div>
 
-                {/* Export Grid */}
-                <div className="grid grid-cols-2 gap-2 mb-4">
+                {/* Primary Data Actions */}
+                <div className="flex gap-2 mb-4">
                     <button
-                        className="btn-secondary py-3 px-1 flex flex-col items-center justify-center gap-1 min-h-[70px]"
+                        className="btn-primary flex-1 py-3 text-sm flex items-center justify-center gap-2"
                         onClick={async () => {
                             const fallbackCopy = (text) => {
                                 const textArea = document.createElement("textarea");
                                 textArea.value = text;
                                 textArea.style.position = "fixed";
                                 document.body.appendChild(textArea);
-                                textArea.focus();
-                                textArea.select();
+                                textArea.focus(); textArea.select();
                                 try { return document.execCommand('copy'); } catch { return false; }
                                 finally { document.body.removeChild(textArea); }
                             }
@@ -166,40 +162,35 @@ export default function ExportModal({ patients, listName, onClose }) {
                             } catch { alert('Clipboard error') }
                         }}
                     >
-                        {copiedData ? (
-                            <CheckCircle size={20} className="text-green-600" />
-                        ) : (
-                            <ClipboardPaste size={20} className="text-blue-600" />
-                        )}
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Copy Code</span>
+                        {copiedData ? <CheckCircle size={18} /> : <ClipboardPaste size={18} />}
+                        {copiedData ? 'Copied!' : 'Copy Data Code'}
                     </button>
 
                     <button
-                        className="btn-secondary py-3 px-1 flex flex-col items-center justify-center gap-1 min-h-[70px]"
+                        className="btn-secondary flex-1 py-3 text-sm flex items-center justify-center gap-2"
                         onClick={handleCopyOrShare}
                     >
-                        {copiedText ? (
-                            <CheckCircle size={20} className="text-green-600" />
-                        ) : (
-                            <Share2 size={20} className="text-purple-600" />
-                        )}
-                        <span className="text-[10px] font-bold uppercase tracking-wider">{navigator.share ? 'Share Text' : 'Copy Text'}</span>
+                        {copiedText ? <CheckCircle size={18} /> : (navigator.share ? <Share2 size={18} /> : <Copy size={18} />)}
+                        {copiedText ? 'Copied!' : (navigator.share ? 'Share List' : 'Copy Text')}
                     </button>
+                </div>
 
+                {/* Secondary Utility Actions */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
                     <button
-                        className="btn-secondary py-3 px-1 flex flex-col items-center justify-center gap-1 min-h-[70px]"
+                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-700 hover:bg-gray-200 transition-colors text-xs font-semibold"
                         onClick={downloadCSV}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="3" y2="15" /></svg>
-                        <span className="text-[10px] font-bold uppercase tracking-wider">CSV Export</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="3" y2="15" /></svg>
+                        CSV Export
                     </button>
 
                     <button
-                        className="btn-secondary py-3 px-1 flex flex-col items-center justify-center gap-1 min-h-[70px]"
+                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-700 hover:bg-gray-200 transition-colors text-xs font-semibold"
                         onClick={handlePrint}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect width="12" height="8" x="6" y="14" /></svg>
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Print PDF</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect width="12" height="8" x="6" y="14" /></svg>
+                        Print PDF
                     </button>
                 </div>
 
