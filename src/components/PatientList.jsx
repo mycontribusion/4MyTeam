@@ -4,6 +4,7 @@ import { ArrowUpDown, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
 
 const SORT_OPTIONS = [
     { value: 'none', label: 'Default' },
+    { value: 'status', label: 'Priority Status' },
     { value: 'ward', label: 'Ward' },
     { value: 'bed', label: 'Bed' },
     { value: 'name', label: 'Name' },
@@ -20,9 +21,24 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
     const sortPatients = (list) => {
         if (sortBy === 'none') return list
         return [...list].sort((a, b) => {
+            if (sortBy === 'status') {
+                if (a.critical !== b.critical) return a.critical ? -1 : 1
+                return 0 // Fallback to original order
+            }
+
+            if (sortBy === 'ward') {
+                const wardCmp = (a.ward || '').localeCompare(b.ward || '', undefined, { numeric: true, sensitivity: 'base' })
+                if (wardCmp !== 0) return wardCmp
+                return (a.bed || '').localeCompare(b.bed || '', undefined, { numeric: true, sensitivity: 'base' })
+            }
+
+            if (sortBy === 'bed') {
+                const bedCmp = (a.bed || '').localeCompare(b.bed || '', undefined, { numeric: true, sensitivity: 'base' })
+                if (bedCmp !== 0) return bedCmp
+                return (a.ward || '').localeCompare(b.ward || '', undefined, { numeric: true, sensitivity: 'base' })
+            }
+
             let av = '', bv = ''
-            if (sortBy === 'ward') { av = a.ward || ''; bv = b.ward || '' }
-            if (sortBy === 'bed') { av = a.bed || ''; bv = b.bed || '' }
             if (sortBy === 'name') { av = a.name || ''; bv = b.name || '' }
             if (sortBy === 'hospnum') { av = a.hospitalNumber || ''; bv = b.hospitalNumber || '' }
             return av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' })

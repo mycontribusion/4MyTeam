@@ -67,12 +67,23 @@ export default function App() {
         if (exists) return 'duplicate'
 
         if (editingPatient) {
+            const sid = editingPatient.id
             setPatients((prev) => prev.map(p =>
-                p.id === editingPatient.id
+                p.id === sid
                     ? { ...p, team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c }
                     : p
             ))
             setEditingPatient(null)
+            // Take back to the patient card
+            setTimeout(() => {
+                const el = document.getElementById(`patient-${sid}`)
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    // Optional: add a quick highlight flash
+                    el.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2')
+                    setTimeout(() => el.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2'), 2000)
+                }
+            }, 100)
         } else {
             setPatients((prev) => [
                 ...prev,

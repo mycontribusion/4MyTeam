@@ -54,7 +54,7 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview }) {
     const badgeColor = wardColors[colorIdx]
 
     return (
-        <div className="relative overflow-hidden rounded-2xl" role="listitem">
+        <div className="relative overflow-hidden rounded-2xl" id={`patient-${id}`} role="listitem">
             {/* Background Actions */}
             <div className={`absolute inset-0 flex justify-between items-center px-6 transition-colors duration-200 ${offsetX > 0 ? (reviewed ? 'bg-gray-200' : 'bg-green-100') : (offsetX < 0 ? 'bg-red-100' : 'bg-transparent')}`}>
                 <div className={`font-bold tracking-widest text-lg flex items-center gap-2 transition-opacity ${offsetX > 20 ? 'opacity-100' : 'opacity-0'} ${reviewed ? 'text-gray-600' : 'text-green-700'}`}>
