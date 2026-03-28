@@ -69,14 +69,40 @@ export default function ExportModal({ patients, listName, onClose }) {
         }
     }
 
+    const downloadCSV = () => {
+        const headers = ['Ward', 'Bed', 'Name', 'HospitalNumber', 'Notes', 'Critical']
+        const rows = patients.map(p => [
+            p.ward || '',
+            p.bed || '',
+            p.name || '',
+            p.hospitalNumber || '',
+            `"${(p.note || '').replace(/"/g, '""')}"`,
+            p.critical ? 'YES' : 'NO'
+        ])
+        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.setAttribute('href', url)
+        link.setAttribute('download', `Handover_${listName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`)
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+
+    const handlePrint = () => {
+        window.print()
+    }
+
     return (
         <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="modal-box" role="dialog" aria-modal="true" aria-labelledby="export-title">
+            <div className="modal-box max-w-md w-[95%]" role="dialog" aria-modal="true" aria-labelledby="export-title">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-5">
                     <div>
-                        <h2 id="export-title" className="font-bold text-gray-900 text-xl">Export: {listName}</h2>
-                        <p className="text-gray-500 text-sm mt-0.5">Scan with another device to import</p>
+                        <h2 id="export-title" className="font-bold text-gray-900 text-xl">Export Control</h2>
+                        <p className="text-gray-500 text-sm mt-0.5">{listName} | {patients.length} Patients</p>
                     </div>
                     <button
                         id="btn-close-export"
@@ -88,104 +114,97 @@ export default function ExportModal({ patients, listName, onClose }) {
                     </button>
                 </div>
 
-                {/* QR Code */}
-                <div className="flex justify-center mb-5">
-                    <div className="bg-white p-4 rounded-2xl border-2 border-gray-100 shadow-sm inline-block">
-                        {qrData.length > 2300 ? (
-                            <div className="w-[260px] h-[260px] flex items-center justify-center text-center p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">
-                                <div>
-                                    <p className="mb-2">⚠️ Too many patients to generate a scanable QR code.</p>
-                                    <p className="text-[10px] opacity-70">Please use "Copy Code" or "Share Text" instead.</p>
+                {/* QR Code Section */}
+                <div className="bg-gray-50 rounded-2xl p-4 mb-4 border border-gray-100">
+                    <div className="flex justify-center mb-3">
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm inline-block">
+                            {qrData.length > 2300 ? (
+                                <div className="w-[180px] h-[180px] flex items-center justify-center text-center p-3 bg-red-50 text-red-600 rounded-lg text-xs font-medium border border-red-100">
+                                    <p>⚠️ List too large for QR. Use Copy Code instead.</p>
                                 </div>
-                            </div>
-                        ) : (
-                            <QRCodeSVG
-                                id="qr-code-svg"
-                                value={qrData}
-                                size={260}
-                                level="L"
-                                includeMargin={false}
-                                fgColor="#111827"
-                                bgColor="#ffffff"
-                            />
-                        )}
+                            ) : (
+                                <QRCodeSVG
+                                    id="qr-code-svg"
+                                    value={qrData}
+                                    size={180}
+                                    level="L"
+                                    includeMargin={false}
+                                    fgColor="#111827"
+                                    bgColor="#ffffff"
+                                />
+                            )}
+                        </div>
                     </div>
+                    <p className="text-center text-[10px] text-gray-500 font-medium">
+                        Scan to sync with another device
+                    </p>
                 </div>
 
-                {/* Patient count summary */}
-                <div className="bg-blue-50 rounded-xl px-4 py-3 mb-4 text-center">
-                    <span className="text-blue-700 font-semibold text-sm">
-                        {patients.length} patient{patients.length !== 1 ? 's' : ''} encoded in QR
-                    </span>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2">
+                {/* Export Grid */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
                     <button
-                        id="btn-copy-data"
-                        className="btn-secondary flex-1 px-2"
+                        className="btn-secondary py-3 px-1 flex flex-col items-center justify-center gap-1 min-h-[70px]"
                         onClick={async () => {
-                            // Robust fallback for non-HTTPS dev environments or strict mobile Safari
                             const fallbackCopy = (text) => {
                                 const textArea = document.createElement("textarea");
                                 textArea.value = text;
-                                textArea.style.top = "0";
-                                textArea.style.left = "0";
                                 textArea.style.position = "fixed";
                                 document.body.appendChild(textArea);
                                 textArea.focus();
                                 textArea.select();
-                                try {
-                                    return document.execCommand('copy');
-                                } catch (err) {
-                                    return false;
-                                } finally {
-                                    document.body.removeChild(textArea);
-                                }
+                                try { return document.execCommand('copy'); } catch { return false; }
+                                finally { document.body.removeChild(textArea); }
                             }
-
                             try {
                                 if (navigator.clipboard && window.isSecureContext) {
                                     await navigator.clipboard.writeText(fullData)
                                 } else {
-                                    if (!fallbackCopy(fullData)) throw new Error('Fallback failed')
+                                    if (!fallbackCopy(fullData)) throw new Error()
                                 }
                                 setCopiedData(true)
                                 setTimeout(() => setCopiedData(false), 2000)
-                            } catch {
-                                alert('Could not copy data code. Your browser may block clipboard access outside of secure connections.')
-                            }
+                            } catch { alert('Clipboard error') }
                         }}
                     >
                         {copiedData ? (
-                            <span className="inline-flex items-center gap-1.5 text-green-600"><CheckCircle size={16} /> Copied!</span>
+                            <CheckCircle size={20} className="text-green-600" />
                         ) : (
-                            <span className="inline-flex items-center gap-1.5"><ClipboardPaste size={16} /> Copy Code</span>
+                            <ClipboardPaste size={20} className="text-blue-600" />
                         )}
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Copy Code</span>
                     </button>
 
                     <button
-                        id="btn-copy-text"
-                        className="btn-secondary flex-1 px-2"
+                        className="btn-secondary py-3 px-1 flex flex-col items-center justify-center gap-1 min-h-[70px]"
                         onClick={handleCopyOrShare}
                     >
                         {copiedText ? (
-                            <span className="inline-flex items-center gap-1.5 text-green-600"><CheckCircle size={16} /> Copied!</span>
-                        ) : navigator.share ? (
-                            <span className="inline-flex items-center gap-1.5"><Share2 size={16} /> Share Text</span>
+                            <CheckCircle size={20} className="text-green-600" />
                         ) : (
-                            <span className="inline-flex items-center gap-1.5"><Copy size={16} /> Copy Text</span>
+                            <Share2 size={20} className="text-purple-600" />
                         )}
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{navigator.share ? 'Share Text' : 'Copy Text'}</span>
+                    </button>
+
+                    <button
+                        className="btn-secondary py-3 px-1 flex flex-col items-center justify-center gap-1 min-h-[70px]"
+                        onClick={downloadCSV}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="3" y2="15" /></svg>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">CSV Export</span>
+                    </button>
+
+                    <button
+                        className="btn-secondary py-3 px-1 flex flex-col items-center justify-center gap-1 min-h-[70px]"
+                        onClick={handlePrint}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect width="12" height="8" x="6" y="14" /></svg>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Print PDF</span>
                     </button>
                 </div>
 
-                <p className="text-center text-[10px] text-gray-400 mt-2 mb-2 px-6 italic">
-                    Note: QR excludes notes for faster scanning.
-                </p>
-
-                <p className="text-center text-xs text-gray-400 mt-2">
-                    <strong>Copy Code</strong> to paste into another device.<br />
-                    <strong>Share Text</strong> to send readable info via WhatsApp.
+                <p className="text-center text-[10px] text-gray-400 italic px-2">
+                    QR excludes personal notes to maintain fast scanning.
                 </p>
             </div>
         </div>

@@ -14,6 +14,53 @@ function generateId() {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
+function PrintView({ patients, listName }) {
+    return (
+        <div id="print-view" className="hidden">
+            <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4">
+                <div>
+                    <h1 className="text-2xl font-bold uppercase tracking-tighter">Handover Report: {listName}</h1>
+                    <p className="text-xs text-gray-600 font-medium">Generated on {new Date().toLocaleString()}</p>
+                </div>
+                <div className="text-right">
+                    <p className="text-lg font-black italic">4MyTeam</p>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th className="col-ward">Ward</th>
+                        <th className="col-bed">Bed</th>
+                        <th className="col-name">Patient Name</th>
+                        <th className="col-hosp">Hosp. No</th>
+                        <th className="col-notes">Notes / Observations</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {patients.map(p => (
+                        <tr key={p.id} className={p.critical ? 'critical-row' : ''}>
+                            <td className="font-bold">{p.ward}</td>
+                            <td className="font-bold">{p.bed}</td>
+                            <td>
+                                {p.critical && <span className="critical-tag">CRITICAL</span>}
+                                <span className="font-bold">{p.name}</span>
+                            </td>
+                            <td className="text-sm font-mono">{p.hospitalNumber}</td>
+                            <td className="italic">{p.note}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+            <div className="mt-8 pt-4 border-t border-gray-300 text-[8pt] text-gray-500 flex justify-between">
+                <p>Digital signature: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+                <p>Page 1 of 1</p>
+            </div>
+        </div>
+    )
+}
+
 export default function App() {
     const [activeTab, setActiveTab] = useState('my_team') // 'my_team' | 'other_team'
     const [patients, setPatients] = useState(() => {
@@ -32,6 +79,8 @@ export default function App() {
     const [deleteCandidateId, setDeleteCandidateId] = useState(null)
     const [saveFlash, setSaveFlash] = useState(false)
     const [pendingImport, setPendingImport] = useState(null)
+    const [history, setHistory] = useState([]) // Stack of previous patients arrays
+    const [showUndoToast, setShowUndoToast] = useState(false)
 
     // Persist to localStorage on every change
     useEffect(() => {
@@ -112,10 +161,13 @@ export default function App() {
 
     const deletePatient = useCallback(() => {
         if (deleteCandidateId) {
+            setHistory(prev => [patients, ...prev].slice(0, 5)) // Save current to history
             setPatients((prev) => prev.filter((p) => p.id !== deleteCandidateId))
             setDeleteCandidateId(null)
+            setShowUndoToast(true)
+            setTimeout(() => setShowUndoToast(false), 5000)
         }
-    }, [deleteCandidateId])
+    }, [deleteCandidateId, patients])
 
     const toggleReview = useCallback((id, isReviewed) => {
         setPatients(prev => prev.map(p =>
@@ -130,9 +182,21 @@ export default function App() {
     }, [activeTab])
 
     const clearAll = useCallback(() => {
+        setHistory(prev => [patients, ...prev].slice(0, 5))
         setPatients(prev => prev.filter(p => (p.team || 'my_team') !== activeTab))
         setShowConfirmClear(false)
-    }, [activeTab])
+        setShowUndoToast(true)
+        setTimeout(() => setShowUndoToast(false), 5000)
+    }, [activeTab, patients])
+
+    const undo = useCallback(() => {
+        if (history.length > 0) {
+            const [prev, ...rest] = history
+            setPatients(prev)
+            setHistory(rest)
+            setShowUndoToast(false)
+        }
+    }, [history])
 
     // Merge imported patients, deduplicate
     const importPatients = useCallback((incoming) => {
@@ -343,6 +407,27 @@ export default function App() {
                     onCancel={() => setPendingImport(null)}
                 />
             )}
+
+            {/* Undo Toast */}
+            {showUndoToast && (
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl z-[100] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <span className="text-sm font-medium">Action undone? No, wait... action completed.</span>
+                    <button
+                        onClick={undo}
+                        className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors uppercase tracking-wider"
+                    >
+                        Undo
+                    </button>
+                    <button onClick={() => setShowUndoToast(false)} className="text-gray-400 hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
+                </div>
+            )}
+
+            <PrintView
+                patients={activePatients}
+                listName={activeTab === 'my_team' ? 'My Team' : 'List B'}
+            />
         </div>
     )
 }
