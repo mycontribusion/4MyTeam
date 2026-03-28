@@ -2,7 +2,7 @@ import { Trash2, Pencil, CheckCircle2 } from 'lucide-react'
 import { useState, useRef } from 'react'
 
 export default function PatientCard({ patient, onEdit, onDelete, onReview }) {
-    const { id, name, hospitalNumber, ward, bed, note, reviewed } = patient
+    const { id, name, hospitalNumber, ward, bed, note, reviewed, critical } = patient
 
     const [offsetX, setOffsetX] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
@@ -71,7 +71,7 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview }) {
             <div
                 className={`card p-4 flex flex-col sm:flex-row gap-4 group relative z-10 touch-pan-y
                     ${isDragging ? 'transition-none' : 'transition-transform duration-300'} 
-                    ${reviewed ? 'opacity-70 bg-gray-50 grayscale-[15%]' : 'bg-white'}`}
+                    ${reviewed ? 'opacity-70 bg-gray-50 grayscale-[15%]' : critical ? 'bg-red-50/40 border-red-200 shadow-sm shadow-red-100/50' : 'bg-white'}`}
                 style={{ transform: `translateX(${offsetX}px)` }}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
@@ -98,6 +98,11 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview }) {
                     {/* Patient Info */}
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                            {critical && !reviewed && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white animate-pulse tracking-tighter">
+                                    CRITICAL
+                                </span>
+                            )}
                             {name && <div className={`text-lg font-bold leading-tight overflow-x-auto whitespace-nowrap ${reviewed ? 'line-through text-gray-500' : 'text-gray-900'}`}>{name}</div>}
                             {hospitalNumber && (
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis ${reviewed ? 'bg-gray-200 text-gray-500 line-through' : 'bg-gray-100 text-gray-800'}`}>

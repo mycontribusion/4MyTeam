@@ -8,6 +8,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
     const [ward, setWard] = useState('')
     const [bed, setBed] = useState('')
     const [note, setNote] = useState('')
+    const [critical, setCritical] = useState(false)
     const [error, setError] = useState('')
 
     useEffect(() => {
@@ -18,6 +19,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             setWard(initialData.ward || '')
             setBed(initialData.bed || '')
             setNote(initialData.note || '')
+            setCritical(!!initialData.critical)
         } else {
             setTeam(initialTeam)
             setName('')
@@ -25,8 +27,9 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             setWard('')
             setBed('')
             setNote('')
+            setCritical(false)
         }
-    }, [initialData])
+    }, [initialData, initialTeam])
 
     const hospNumRef = useRef(null)
     const wardRef = useRef(null)
@@ -56,7 +59,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             return
         }
 
-        const result = onAdd({ team, name, hospitalNumber, ward, bed, note })
+        const result = onAdd({ team, name: n, hospitalNumber: h, ward: w, bed: bed.trim(), note: note.trim(), critical })
         if (result === 'duplicate') {
             setError('A patient with this Hospital Number or Ward/Bed already exists.')
             return
@@ -67,6 +70,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             setWard('')
             setBed('')
             setNote('')
+            setCritical(false)
             setError('')
         }
     }
@@ -102,8 +106,25 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                     </button>
                 </div>
 
-                <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-4">
+                {/* Critical Toggle */}
+                <div className="flex items-center justify-between mb-4 px-1 bg-gray-50/50 p-2 rounded-xl border border-gray-100/50">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Priority</span>
+                        <span className="text-xs font-bold text-gray-600 uppercase tracking-wider text-left">Status</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setCritical(!critical)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border-2 ${critical
+                            ? 'bg-red-50 text-red-600 border-red-200 shadow-sm'
+                            : 'bg-white text-gray-400 border-gray-100'}`}
+                    >
+                        <div className={`w-2 h-2 rounded-full ${critical ? 'bg-red-500 animate-pulse' : 'bg-gray-300'}`} />
+                        {critical ? 'CRITICAL' : 'NORMAL'}
+                    </button>
+                </div>
 
+                <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-4">
                     {/* Row 1: Name (Full width) */}
                     <div>
                         <label htmlFor="input-name" className="block text-xs font-semibold text-gray-500 mb-1.5">
@@ -116,14 +137,11 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                             placeholder="John Doe"
                             value={name}
                             onChange={(e) => {
-                                // Strip out any numbers
                                 let val = e.target.value.replace(/[0-9]/g, '')
                                 if (!e.nativeEvent.isComposing) {
                                     val = val.replace(/(?:^|\s)\S/g, (c) => c.toUpperCase())
-                                    setName(val)
-                                } else {
-                                    setName(val)
                                 }
+                                setName(val)
                                 setError('')
                             }}
                             onKeyDown={(e) => handleKeyDown(e, hospNumRef)}
@@ -214,7 +232,6 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                             type="button"
                             className="btn-secondary px-4 text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                             onClick={onCancel}
-                            aria-label="Close patient form"
                             style={{ minHeight: '40px', fontSize: '0.875rem' }}
                         >
                             Close
@@ -223,22 +240,16 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                             id="btn-add-patient"
                             type="submit"
                             className="btn-primary px-5"
-                            aria-label={initialData ? "Save changes" : "Add patient"}
                             style={{ minHeight: '40px', fontSize: '0.875rem' }}
                         >
                             {initialData ? (
-                                <>
-                                    <span className="inline-flex items-center gap-1"><Save size={16} strokeWidth={2.5} /> Save</span>
-                                </>
+                                <span className="inline-flex items-center gap-1"><Save size={16} strokeWidth={2.5} /> Save</span>
                             ) : (
-                                <>
-                                    <span className="inline-flex items-center gap-1"><Plus size={16} strokeWidth={2.5} /> Add</span>
-                                </>
+                                <span className="inline-flex items-center gap-1"><Plus size={16} strokeWidth={2.5} /> Add</span>
                             )}
                         </button>
                     </div>
                 </div>
-
 
                 {error && (
                     <div

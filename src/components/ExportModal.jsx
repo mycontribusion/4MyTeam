@@ -13,6 +13,7 @@ export default function ExportModal({ patients, listName, onClose }) {
         if (p.bed) obj.b = p.bed
         if (p.name) obj.n = p.name
         if (p.hospitalNumber) obj.h = p.hospitalNumber
+        if (p.critical) obj.c = true
         return obj
     })
     const qrData = JSON.stringify(qrCompressed)
@@ -25,6 +26,7 @@ export default function ExportModal({ patients, listName, onClose }) {
         if (p.name) obj.n = p.name
         if (p.hospitalNumber) obj.h = p.hospitalNumber
         if (p.note) obj.t = p.note
+        if (p.critical) obj.c = true
         return obj
     })
     const fullData = JSON.stringify(fullCompressed)

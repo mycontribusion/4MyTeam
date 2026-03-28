@@ -45,12 +45,13 @@ export default function App() {
         }
     }, [patients])
 
-    const savePatient = useCallback(({ team = 'my_team', name, hospitalNumber, ward, bed, note }) => {
+    const savePatient = useCallback(({ team = 'my_team', name, hospitalNumber, ward, bed, note, critical = false }) => {
         const n = name.trim()
         const h = hospitalNumber.trim()
         const w = ward.trim().toUpperCase()
         const b = bed.trim()
         const t = note.trim()
+        const c = !!critical
 
         if (!w && !h && !n) return false
 
@@ -68,14 +69,14 @@ export default function App() {
         if (editingPatient) {
             setPatients((prev) => prev.map(p =>
                 p.id === editingPatient.id
-                    ? { ...p, team, name: n, hospitalNumber: h, ward: w, bed: b, note: t }
+                    ? { ...p, team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c }
                     : p
             ))
             setEditingPatient(null)
         } else {
             setPatients((prev) => [
                 ...prev,
-                { id: generateId(), team, name: n, hospitalNumber: h, ward: w, bed: b, note: t },
+                { id: generateId(), team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c },
             ])
             // Form stays open so the user can add the next patient
         }
@@ -138,6 +139,7 @@ export default function App() {
                 ward: (_p.w || _p.ward || '').trim().toUpperCase(),
                 bed: (_p.b || _p.bed || '').trim(),
                 note: (_p.t || _p.note || '').trim(),
+                critical: !!(_p.c || _p.critical),
             };
             if (!p.name && !p.hospitalNumber && !p.ward) return;
 
