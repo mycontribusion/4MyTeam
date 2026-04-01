@@ -39,7 +39,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
     const autoGrow = useCallback((el) => {
         if (!el) return
         el.style.height = 'auto'
-        el.style.height = Math.min(el.scrollHeight, 96) + 'px'
+        el.style.height = Math.min(el.scrollHeight, 240) + 'px'
     }, [])
 
     useEffect(() => {
@@ -102,7 +102,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                         onClick={() => setTeam('other_team')}
                         className={`flex-1 text-xs sm:text-sm font-semibold py-2 rounded-lg transition-all ${team === 'other_team' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
-                        Other Team
+                        List B
                     </button>
                 </div>
 
@@ -222,7 +222,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                             value={note}
                             onChange={(e) => { setNote(e.target.value); setError(''); autoGrow(e.target) }}
                             autoComplete="off"
-                            style={{ minHeight: '40px', maxHeight: '96px', overflowY: 'auto' }}
+                            style={{ minHeight: '40px', maxHeight: '240px', overflowY: 'auto' }}
                         />
                     </div>
 
