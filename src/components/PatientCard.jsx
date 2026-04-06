@@ -81,19 +81,42 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
             >
                 <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
 
-                    {/* Ward/Bed or Initial Badge */}
-                    <div className={`flex-shrink-0 flex flex-col items-center justify-center rounded-xl border-2 px-3 py-2 text-center min-w-[64px] min-h-[64px] ${badgeColor}`}>
-                        {ward || bed ? (
-                            <>
-                                {ward && <div className="text-xs font-semibold uppercase tracking-wider opacity-70 leading-none mb-1">{ward}</div>}
-                                {bed && <div className="text-xl font-extrabold leading-tight">{bed}</div>}
-                                {!bed && ward && <div className="text-xl font-extrabold leading-tight">-</div>}
-                            </>
-                        ) : (
-                            <div className="text-2xl font-extrabold uppercase leading-none">
-                                {name ? name.charAt(0) : '?'}
-                            </div>
-                        )}
+                    {/* Left Column (Badge + Mobile Actions) */}
+                    <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                        {/* Ward/Bed or Initial Badge */}
+                        <div className={`flex flex-col items-center justify-center rounded-xl border-2 px-3 py-2 text-center w-[64px] min-h-[64px] ${badgeColor}`}>
+                            {ward || bed ? (
+                                <>
+                                    {ward && <div className="text-xs font-semibold uppercase tracking-wider opacity-70 leading-none mb-1">{ward}</div>}
+                                    {bed && <div className="text-xl font-extrabold leading-tight">{bed}</div>}
+                                    {!bed && ward && <div className="text-xl font-extrabold leading-tight">-</div>}
+                                </>
+                            ) : (
+                                <div className="text-2xl font-extrabold uppercase leading-none">
+                                    {name ? name.charAt(0) : '?'}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Mobile Actions (Under Badge) */}
+                        <div className="flex sm:hidden flex-row gap-0.5 opacity-100">
+                            {onToggleSelect && (
+                                <button
+                                    className={`btn-icon !min-h-[36px] !min-w-[36px] rounded-lg transition-all ${isSelected ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-400 hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                                    onClick={(e) => { e.stopPropagation(); onToggleSelect(id) }}
+                                    aria-label="Toggle selection"
+                                >
+                                    {isSelected ? <CheckCircle2 size={18} /> : <div className="w-4 h-4 rounded border-2 border-gray-300 dark:border-gray-500" />}
+                                </button>
+                            )}
+                            <button
+                                className="btn-icon !min-h-[36px] !min-w-[36px] rounded-lg text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                onClick={() => onEdit(patient)}
+                                aria-label="Edit patient"
+                            >
+                                <Pencil size={16} strokeWidth={2} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Patient Info */}
@@ -118,14 +141,14 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex justify-end sm:items-center -mt-2 sm:mt-0 gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                {/* Desktop Actions */}
+                <div className="hidden sm:flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity z-20">
                     {/* Selection checkbox */}
                     {onToggleSelect && (
                         <button
                             className={`btn-icon flex-shrink-0 transition-all ${isSelected
-                                    ? 'text-blue-600 dark:text-blue-400'
-                                    : 'text-gray-300 dark:text-gray-600 hover:text-blue-400'
+                                ? 'text-blue-600 dark:text-blue-400'
+                                : 'text-gray-300 dark:text-gray-600 hover:text-blue-400'
                                 }`}
                             onClick={(e) => { e.stopPropagation(); onToggleSelect(id) }}
                             aria-label={isSelected ? 'Deselect patient' : 'Select patient for export'}

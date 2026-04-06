@@ -54,8 +54,19 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                {/* Title & Badge */}
+                <div className="flex items-center gap-3">
+                    <h2 className="font-semibold text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider">
+                        Patient List
+                    </h2>
+                    <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold px-2.5 py-1 rounded-full">
+                        {activePatients.length}
+                    </span>
+                </div>
+
+                {/* Controls (Select All & Sort) */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
                     {/* Select All toggle */}
                     <button
                         onClick={() => onToggleSelectAll(allIds)}
@@ -70,27 +81,21 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
                         }
                         {someSelected ? `${selectedIds.size} selected` : 'Select'}
                     </button>
-                    <h2 className="font-semibold text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider">
-                        Patient List
-                    </h2>
-                    <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold px-2.5 py-1 rounded-full">
-                        {activePatients.length}
-                    </span>
-                </div>
 
-                {/* Sort controls */}
-                <div className="flex items-center gap-1.5">
-                    <ArrowUpDown size={13} className="text-gray-400 flex-shrink-0" />
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="text-xs text-gray-600 dark:text-gray-300 font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-0 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300 dark:ring-blue-700"
-                        aria-label="Sort patients by"
-                    >
-                        {SORT_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                    </select>
+                    {/* Sort controls */}
+                    <div className="flex items-center gap-1.5">
+                        <ArrowUpDown size={13} className="text-gray-400 flex-shrink-0" />
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="text-xs text-gray-600 dark:text-gray-300 font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-0 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300 dark:ring-blue-700"
+                            aria-label="Sort patients by"
+                        >
+                            {SORT_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
