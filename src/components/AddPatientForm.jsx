@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Plus, Save } from 'lucide-react'
 
-export default function AddPatientForm({ onAdd, onCancel, initialData, initialTeam = 'my_team' }) {
+export default function AddPatientForm({ onAdd, onCancel, initialData, initialTeam = 'my_team', isMortalityMode = false }) {
     const [team, setTeam] = useState(initialTeam)
     const [name, setName] = useState('')
     const [hospitalNumber, setHospitalNumber] = useState('')
@@ -83,34 +83,36 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
     }
 
     return (
-        <div className="card p-3 sm:p-4 mb-6">
-            <h2 className="hidden sm:block font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wider">
-                {initialData ? 'Edit Patient' : 'Add Patient'}
+        <div className="card p-3 sm:p-4 mb-6 dark:bg-gray-800 dark:border-gray-700">
+            <h2 className="hidden sm:block font-semibold text-gray-700 dark:text-gray-300 text-sm mb-3 uppercase tracking-wider">
+                {isMortalityMode ? 'Add Mortality Record' : initialData ? 'Edit Patient' : 'Add Patient'}
             </h2>
             <form id="add-patient-form" onSubmit={handleSubmit}>
-                {/* Team Selector Indicator */}
-                <div className="flex bg-gray-100 p-1 rounded-xl mb-4 sm:mb-5">
-                    <button
-                        type="button"
-                        onClick={() => setTeam('my_team')}
-                        className={`flex-1 text-xs sm:text-sm font-semibold py-2 rounded-lg transition-all ${team === 'my_team' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        My Team
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setTeam('other_team')}
-                        className={`flex-1 text-xs sm:text-sm font-semibold py-2 rounded-lg transition-all ${team === 'other_team' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        List B
-                    </button>
-                </div>
+                {/* Team Selector — hidden in mortality mode */}
+                {!isMortalityMode && (
+                    <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl mb-4 sm:mb-5">
+                        <button
+                            type="button"
+                            onClick={() => setTeam('my_team')}
+                            className={`flex-1 text-xs sm:text-sm font-semibold py-2 rounded-lg transition-all ${team === 'my_team' ? 'bg-white dark:bg-gray-600 text-blue-700 dark:text-blue-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                        >
+                            My Team
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setTeam('other_team')}
+                            className={`flex-1 text-xs sm:text-sm font-semibold py-2 rounded-lg transition-all ${team === 'other_team' ? 'bg-white dark:bg-gray-600 text-purple-700 dark:text-purple-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                        >
+                            List B
+                        </button>
+                    </div>
+                )}
 
                 {/* Critical Toggle */}
-                <div className="flex items-center justify-between mb-4 px-1 bg-gray-50/50 p-2 rounded-xl border border-gray-100/50">
+                <div className="flex items-center justify-between mb-4 px-1 bg-gray-50/50 dark:bg-gray-700/50 p-2 rounded-xl border border-gray-100/50 dark:border-gray-600/50">
                     <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Priority</span>
-                        <span className="text-xs font-bold text-gray-600 uppercase tracking-wider text-left">Status</span>
+                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Priority</span>
+                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider text-left">Status</span>
                     </div>
                     <button
                         type="button"
@@ -127,7 +129,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                 <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-4">
                     {/* Row 1: Name (Full width) */}
                     <div>
-                        <label htmlFor="input-name" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                        <label htmlFor="input-name" className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">
                             Patient Name
                         </label>
                         <input
@@ -153,7 +155,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                     {/* Row 2: HospNum (45%) + Ward (35%) + Bed (20%) */}
                     <div className="flex gap-2 sm:gap-3">
                         <div className="min-w-0" style={{ flex: '45 1 0%' }}>
-                            <label htmlFor="input-hospnum" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                            <label htmlFor="input-hospnum" className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">
                                 Hospital Number
                             </label>
                             <input
@@ -169,7 +171,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                             />
                         </div>
                         <div className="min-w-0" style={{ flex: '35 1 0%' }}>
-                            <label htmlFor="input-ward" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                            <label htmlFor="input-ward" className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">
                                 Ward
                             </label>
                             <input
@@ -188,7 +190,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                             />
                         </div>
                         <div className="min-w-0" style={{ flex: '20 1 0%' }}>
-                            <label htmlFor="input-bed" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                            <label htmlFor="input-bed" className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">
                                 Bed
                             </label>
                             <input
@@ -210,7 +212,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
 
                     {/* Row 3: Note (Full width) */}
                     <div>
-                        <label htmlFor="input-note" className="block text-xs font-semibold text-gray-500 mb-1.5">
+                        <label htmlFor="input-note" className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">
                             Note
                         </label>
                         <textarea
@@ -230,7 +232,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                     <div className="flex justify-end gap-2 mt-1">
                         <button
                             type="button"
-                            className="btn-secondary px-4 text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                            className="btn-secondary px-4 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300"
                             onClick={onCancel}
                             style={{ minHeight: '40px', fontSize: '0.875rem' }}
                         >
@@ -254,7 +256,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                 {error && (
                     <div
                         role="alert"
-                        className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-sm font-medium"
+                        className="flex items-center gap-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-3 py-2 text-sm font-medium"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></svg>
                         {error}

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import PatientCard from './PatientCard'
-import { ArrowUpDown, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
+import { ArrowUpDown, ChevronDown, ChevronRight, RotateCcw, CheckSquare, Square } from 'lucide-react'
 
 const SORT_OPTIONS = [
     { value: 'none', label: 'Default' },
@@ -11,7 +11,7 @@ const SORT_OPTIONS = [
     { value: 'hospnum', label: 'Hosp No.' },
 ]
 
-export default function PatientList({ patients, onDelete, onEdit, onReview, onResetReviews }) {
+export default function PatientList({ patients, onDelete, onEdit, onReview, onResetReviews, selectedIds = new Set(), onToggleSelect, onToggleSelectAll }) {
     const [sortBy, setSortBy] = useState('none')
     const [isReviewedOpen, setIsReviewedOpen] = useState(false)
 
@@ -23,7 +23,7 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
         return [...list].sort((a, b) => {
             if (sortBy === 'status') {
                 if (a.critical !== b.critical) return a.critical ? -1 : 1
-                return 0 // Fallback to original order
+                return 0
             }
 
             if (sortBy === 'ward') {
@@ -45,17 +45,35 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
         })
     }
 
-    const sortedActive = useMemo(() => sortPatients(activePatients), [activePatients, sortBy, sortPatients])
-    const sortedReviewed = useMemo(() => sortPatients(reviewedPatients), [reviewedPatients, sortBy, sortPatients])
+    const sortedActive = useMemo(() => sortPatients(activePatients), [activePatients, sortBy])
+    const sortedReviewed = useMemo(() => sortPatients(reviewedPatients), [reviewedPatients, sortBy])
+
+    const allIds = patients.map(p => p.id)
+    const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.has(id))
+    const someSelected = selectedIds.size > 0
 
     return (
         <div>
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                    <h2 className="font-semibold text-gray-500 text-sm uppercase tracking-wider">
+                    {/* Select All toggle */}
+                    <button
+                        onClick={() => onToggleSelectAll(allIds)}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        title={allSelected ? 'Deselect all' : 'Select all for export'}
+                    >
+                        {allSelected
+                            ? <CheckSquare size={16} className="text-blue-600 dark:text-blue-400" />
+                            : someSelected
+                                ? <CheckSquare size={16} className="text-blue-400 dark:text-blue-500 opacity-60" />
+                                : <Square size={16} />
+                        }
+                        {someSelected ? `${selectedIds.size} selected` : 'Select'}
+                    </button>
+                    <h2 className="font-semibold text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider">
                         Patient List
                     </h2>
-                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full">
+                    <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold px-2.5 py-1 rounded-full">
                         {activePatients.length}
                     </span>
                 </div>
@@ -66,7 +84,7 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
                     <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="text-xs text-gray-600 font-medium bg-gray-100 hover:bg-gray-200 border-0 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        className="text-xs text-gray-600 dark:text-gray-300 font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-0 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300 dark:ring-blue-700"
                         aria-label="Sort patients by"
                     >
                         {SORT_OPTIONS.map((opt) => (
@@ -88,27 +106,29 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
                         onEdit={onEdit}
                         onDelete={onDelete}
                         onReview={onReview}
+                        isSelected={selectedIds.has(patient.id)}
+                        onToggleSelect={onToggleSelect}
                     />
                 ))}
                 {sortedActive.length === 0 && reviewedPatients.length > 0 && (
-                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
                         All patients reviewed! Great job! 🎉
                     </div>
                 )}
             </div>
 
             {reviewedPatients.length > 0 && (
-                <div className="mt-4 border-t border-gray-200 pt-6">
+                <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-6">
                     <div className="flex items-center justify-between mb-4">
                         <button
-                            className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-semibold"
+                            className="flex items-center gap-2 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white font-semibold"
                             onClick={() => setIsReviewedOpen(!isReviewedOpen)}
                         >
                             {isReviewedOpen ? <ChevronDown size={20} className="text-gray-400" /> : <ChevronRight size={20} className="text-gray-400" />}
                             Reviewed Patients ({reviewedPatients.length})
                         </button>
                         <button
-                            className="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"
+                            className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer"
                             onClick={onResetReviews}
                         >
                             <RotateCcw size={15} />
@@ -125,6 +145,8 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
                                     onEdit={onEdit}
                                     onDelete={onDelete}
                                     onReview={onReview}
+                                    isSelected={selectedIds.has(patient.id)}
+                                    onToggleSelect={onToggleSelect}
                                 />
                             ))}
                         </div>

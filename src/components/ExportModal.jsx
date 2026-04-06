@@ -14,6 +14,7 @@ export default function ExportModal({ patients, listName, onClose }) {
         if (p.name) obj.n = p.name
         if (p.hospitalNumber) obj.h = p.hospitalNumber
         if (p.critical) obj.c = true
+        if (p.reason === 'mortality') obj.m = true
         return obj
     })
     const qrData = JSON.stringify(qrCompressed)
@@ -27,6 +28,10 @@ export default function ExportModal({ patients, listName, onClose }) {
         if (p.hospitalNumber) obj.h = p.hospitalNumber
         if (p.note) obj.t = p.note
         if (p.critical) obj.c = true
+        if (p.reason === 'mortality') {
+            obj.reason = 'mortality'
+            obj.removedAt = p.removedAt
+        }
         return obj
     })
     const fullData = JSON.stringify(fullCompressed)
@@ -35,15 +40,17 @@ export default function ExportModal({ patients, listName, onClose }) {
     const textData = patients
         .map((p) => {
             const parts = []
+            if (p.reason === 'mortality') parts.push(`[DECEASED]`)
             if (p.name) parts.push(`Name: ${p.name}`)
             if (p.hospitalNumber) parts.push(`Hosp: ${p.hospitalNumber}`)
             if (p.ward) parts.push(`Ward: ${p.ward}`)
             if (p.bed) parts.push(`Bed: ${p.bed}`)
             let line = parts.join(' | ')
             if (p.note) line += `\nNote: ${p.note}`
+            if (p.removedAt) line += `\nRecorded: ${new Date(p.removedAt).toLocaleString()}`
             return line
         })
-        .join('\n')
+        .join('\n\n')
 
     const handleCopyOrShare = async () => {
         const shareText = `4MyTeam Patient List:\n${textData}`
@@ -70,14 +77,16 @@ export default function ExportModal({ patients, listName, onClose }) {
     }
 
     const downloadCSV = () => {
-        const headers = ['Ward', 'Bed', 'Name', 'HospitalNumber', 'Notes', 'Critical']
+        const headers = ['Status', 'Ward', 'Bed', 'Name', 'HospitalNumber', 'Notes', 'Critical', 'RecordedAt']
         const rows = patients.map(p => [
+            p.reason === 'mortality' ? 'DECEASED' : 'ACTIVE',
             p.ward || '',
             p.bed || '',
             p.name || '',
             p.hospitalNumber || '',
             `"${(p.note || '').replace(/"/g, '""')}"`,
-            p.critical ? 'YES' : 'NO'
+            p.critical ? 'YES' : 'NO',
+            p.removedAt ? `"${new Date(p.removedAt).toISOString()}"` : ''
         ])
         const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })

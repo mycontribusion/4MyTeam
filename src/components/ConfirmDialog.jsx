@@ -14,13 +14,13 @@ export default function ConfirmDialog({ title, message, confirmLabel, onConfirm,
                 aria-describedby="confirm-message"
             >
                 <div className="flex flex-col items-center text-center gap-4">
-                    <div className="bg-red-100 rounded-full p-4">
-                        <AlertTriangle size={28} className="text-red-600" />
+                    <div className="bg-red-100 dark:bg-red-900/30 rounded-full p-4">
+                        <AlertTriangle size={28} className="text-red-600 dark:text-red-400" />
                     </div>
 
                     <div>
-                        <h2 id="confirm-title" className="font-bold text-gray-900 text-xl">{title}</h2>
-                        <p id="confirm-message" className="text-gray-500 text-sm mt-2 leading-relaxed">{message}</p>
+                        <h2 id="confirm-title" className="font-bold text-gray-900 dark:text-white text-xl">{title}</h2>
+                        <p id="confirm-message" className="text-gray-500 dark:text-gray-400 text-sm mt-2 leading-relaxed">{message}</p>
                     </div>
 
                     <div className="flex flex-col gap-2 w-full mt-1">

@@ -1,7 +1,7 @@
 import { Trash2, Pencil, CheckCircle2 } from 'lucide-react'
 import { useState, useRef } from 'react'
 
-export default function PatientCard({ patient, onEdit, onDelete, onReview }) {
+export default function PatientCard({ patient, onEdit, onDelete, onReview, isSelected = false, onToggleSelect }) {
     const { id, name, hospitalNumber, ward, bed, note, reviewed, critical } = patient
 
     const [offsetX, setOffsetX] = useState(0)
@@ -62,7 +62,7 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview }) {
                     {reviewed ? 'UN-REVIEW' : 'REVIEWED'}
                 </div>
                 <div className={`font-bold tracking-widest text-lg flex items-center gap-2 transition-opacity ${offsetX < -20 ? 'opacity-100 text-red-600' : 'opacity-0'}`}>
-                    DELETE
+                    REMOVE
                     <Trash2 size={24} />
                 </div>
             </div>
@@ -71,7 +71,8 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview }) {
             <div
                 className={`card p-4 flex flex-col sm:flex-row gap-4 group relative z-10 touch-pan-y
                     ${isDragging ? 'transition-none' : 'transition-transform duration-300'} 
-                    ${reviewed ? 'opacity-70 bg-gray-50 grayscale-[15%]' : critical ? 'bg-red-50/40 border-red-200 shadow-sm shadow-red-100/50' : 'bg-white'}`}
+                    ${isSelected ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-1' : ''}
+                    ${reviewed ? 'opacity-70 bg-gray-50 dark:bg-gray-800/50 grayscale-[15%]' : critical ? 'bg-red-50/40 dark:bg-red-900/10 border-red-200 dark:border-red-800 shadow-sm shadow-red-100/50' : 'bg-white dark:bg-gray-800'}`}
                 style={{ transform: `translateX(${offsetX}px)` }}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
@@ -103,24 +104,46 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview }) {
                                     CRITICAL
                                 </span>
                             )}
-                            {name && <div className={`text-lg font-bold leading-tight overflow-x-auto whitespace-nowrap ${reviewed ? 'line-through text-gray-500' : 'text-gray-900'}`}>{name}</div>}
+                            {name && <div className={`text-lg font-bold leading-tight overflow-x-auto whitespace-nowrap ${reviewed ? 'line-through text-gray-500 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>{name}</div>}
                             {hospitalNumber && (
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis ${reviewed ? 'bg-gray-200 text-gray-500 line-through' : 'bg-gray-100 text-gray-800'}`}>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis ${reviewed ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-500 line-through' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
                                     {hospitalNumber}
                                 </span>
                             )}
                         </div>
                         {(!name && !hospitalNumber) && (
-                            <div className="text-sm font-medium text-gray-500 italic">No name provided</div>
+                            <div className="text-sm font-medium text-gray-500 dark:text-gray-400 italic">No name provided</div>
                         )}
-                        {note && <div className="text-sm text-gray-600 mt-1 overflow-y-auto" style={{ whiteSpace: 'pre-wrap', maxHeight: '5.5rem' }}>{note}</div>}
+                        {note && <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 overflow-y-auto" style={{ whiteSpace: 'pre-wrap', maxHeight: '5.5rem' }}>{note}</div>}
                     </div>
                 </div>
 
-                {/* Actions (moved to top right on mobile, aligned center on desktop) */}
+                {/* Actions */}
                 <div className="flex justify-end sm:items-center -mt-2 sm:mt-0 gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    {/* Selection checkbox */}
+                    {onToggleSelect && (
+                        <button
+                            className={`btn-icon flex-shrink-0 transition-all ${isSelected
+                                    ? 'text-blue-600 dark:text-blue-400'
+                                    : 'text-gray-300 dark:text-gray-600 hover:text-blue-400'
+                                }`}
+                            onClick={(e) => { e.stopPropagation(); onToggleSelect(id) }}
+                            aria-label={isSelected ? 'Deselect patient' : 'Select patient for export'}
+                            title={isSelected ? 'Deselect' : 'Select for export'}
+                        >
+                            {isSelected ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect width="18" height="18" x="3" y="3" rx="2" /><path d="m9 12 2 2 4-4" />
+                                </svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect width="18" height="18" x="3" y="3" rx="2" />
+                                </svg>
+                            )}
+                        </button>
+                    )}
                     <button
-                        className="btn-icon text-gray-400 hover:text-blue-600 hover:bg-blue-50 focus:ring-blue-200 flex-shrink-0"
+                        className="btn-icon text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:ring-blue-200 flex-shrink-0"
                         onClick={() => onEdit(patient)}
                         aria-label="Edit patient"
                         title="Edit patient"

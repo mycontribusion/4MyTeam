@@ -7,8 +7,12 @@ import ScannerComponent from './components/ScannerComponent'
 import ConfirmDialog from './components/ConfirmDialog'
 import EmptyState from './components/EmptyState'
 import ReviewDuplicatesModal from './components/ReviewDuplicatesModal'
+import RemovalChoiceDialog from './components/RemovalChoiceDialog'
+import FeedbackModal from './components/FeedbackModal'
 
 const STORAGE_KEY = '4myteam_patients'
+const MORTALITIES_KEY = '4myteam_mortalities'
+const DARK_MODE_KEY = '4myteam_darkmode'
 
 function generateId() {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -62,7 +66,7 @@ function PrintView({ patients, listName }) {
 }
 
 export default function App() {
-    const [activeTab, setActiveTab] = useState('my_team') // 'my_team' | 'other_team'
+    const [activeTab, setActiveTab] = useState('my_team') // 'my_team' | 'other_team' | 'mortalities'
     const [patients, setPatients] = useState(() => {
         try {
             const stored = localStorage.getItem(STORAGE_KEY)
@@ -71,16 +75,51 @@ export default function App() {
             return []
         }
     })
+    const [mortalities, setMortalities] = useState(() => {
+        try {
+            const stored = localStorage.getItem(MORTALITIES_KEY)
+            return stored ? JSON.parse(stored) : []
+        } catch {
+            return []
+        }
+    })
+    const [darkMode, setDarkMode] = useState(() => {
+        try {
+            const stored = localStorage.getItem(DARK_MODE_KEY)
+            if (stored !== null) return JSON.parse(stored)
+            return window.matchMedia('(prefers-color-scheme: dark)').matches
+        } catch {
+            return false
+        }
+    })
+
     const [showExport, setShowExport] = useState(false)
     const [showScanner, setShowScanner] = useState(false)
     const [showConfirmClear, setShowConfirmClear] = useState(false)
     const [showAddForm, setShowAddForm] = useState(false)
+    const [showMortalityForm, setShowMortalityForm] = useState(false)
+    const [showFeedback, setShowFeedback] = useState(false)
     const [editingPatient, setEditingPatient] = useState(null)
-    const [deleteCandidateId, setDeleteCandidateId] = useState(null)
+    const [removalCandidateId, setRemovalCandidateId] = useState(null)
     const [saveFlash, setSaveFlash] = useState(false)
     const [pendingImport, setPendingImport] = useState(null)
-    const [history, setHistory] = useState([]) // Stack of previous patients arrays
+    const [history, setHistory] = useState([]) // Stack of { patients, mortalities } objects
     const [showUndoToast, setShowUndoToast] = useState(false)
+    const [selectedPatientIds, setSelectedPatientIds] = useState(new Set())
+
+    // Apply dark mode class to <html>
+    useEffect(() => {
+        if (darkMode) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+        try {
+            localStorage.setItem(DARK_MODE_KEY, JSON.stringify(darkMode))
+        } catch { /* ignore */ }
+    }, [darkMode])
+
+    const toggleDarkMode = useCallback(() => setDarkMode(prev => !prev), [])
 
     // Persist to localStorage on every change
     useEffect(() => {
@@ -93,6 +132,14 @@ export default function App() {
             // localStorage full / unavailable
         }
     }, [patients])
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(MORTALITIES_KEY, JSON.stringify(mortalities))
+        } catch {
+            // localStorage full / unavailable
+        }
+    }, [mortalities])
 
     const savePatient = useCallback(({ team = 'my_team', name, hospitalNumber, ward, bed, note, critical = false }) => {
         const n = name.trim()
@@ -123,12 +170,10 @@ export default function App() {
                     : p
             ))
             setEditingPatient(null)
-            // Take back to the patient card
             setTimeout(() => {
                 const el = document.getElementById(`patient-${sid}`)
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                    // Optional: add a quick highlight flash
                     el.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2')
                     setTimeout(() => el.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2'), 2000)
                 }
@@ -138,36 +183,97 @@ export default function App() {
                 ...prev,
                 { id: generateId(), team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c },
             ])
-            // Form stays open so the user can add the next patient
         }
         return true
     }, [patients, editingPatient])
 
+    const addMortality = useCallback(({ name, hospitalNumber, ward, bed, note, critical = false }) => {
+        const n = name.trim()
+        const h = hospitalNumber.trim()
+        const w = ward.trim().toUpperCase()
+        if (!w && !h && !n) return false
+        const record = {
+            id: generateId(),
+            team: 'my_team',
+            name: n,
+            hospitalNumber: h,
+            ward: w,
+            bed: bed.trim(),
+            note: note.trim(),
+            critical: !!critical,
+            reason: 'mortality',
+            removedAt: new Date().toISOString(),
+            originalTeam: 'my_team',
+        }
+        setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+        setMortalities(prev => [record, ...prev])
+        setShowMortalityForm(false)
+        return true
+    }, [patients, mortalities])
+
     const startEditing = useCallback((patient) => {
         setEditingPatient(patient)
         setShowAddForm(false)
-        // Scroll to top to ensure form is visible
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }, [])
 
     const cancelForm = useCallback(() => {
         setShowAddForm(false)
+        setShowMortalityForm(false)
         setEditingPatient(null)
     }, [])
 
-    const confirmDeletePatient = useCallback((id) => {
-        setDeleteCandidateId(id)
+    const toggleSelectPatient = useCallback((id) => {
+        setSelectedPatientIds(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
     }, [])
 
-    const deletePatient = useCallback(() => {
-        if (deleteCandidateId) {
-            setHistory(prev => [patients, ...prev].slice(0, 5)) // Save current to history
-            setPatients((prev) => prev.filter((p) => p.id !== deleteCandidateId))
-            setDeleteCandidateId(null)
+    const toggleSelectAll = useCallback((patientIds) => {
+        setSelectedPatientIds(prev => {
+            if (patientIds.every(id => prev.has(id))) return new Set()
+            return new Set(patientIds)
+        })
+    }, [])
+
+    const clearSelection = useCallback(() => setSelectedPatientIds(new Set()), [])
+
+    const startRemovalProcess = useCallback((id) => {
+        setRemovalCandidateId(id)
+    }, [])
+
+    const dischargePatient = useCallback(() => {
+        if (removalCandidateId) {
+            setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+            setPatients((prev) => prev.filter((p) => p.id !== removalCandidateId))
+            setRemovalCandidateId(null)
             setShowUndoToast(true)
             setTimeout(() => setShowUndoToast(false), 5000)
         }
-    }, [deleteCandidateId, patients])
+    }, [removalCandidateId, patients, mortalities])
+
+    const markAsMortality = useCallback(() => {
+        if (removalCandidateId) {
+            const deceased = patients.find(p => p.id === removalCandidateId)
+            if (deceased) {
+                setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+                const mortalityRecord = {
+                    ...deceased,
+                    removedAt: new Date().toISOString(),
+                    reason: 'mortality',
+                    originalTeam: deceased.team || 'my_team'
+                }
+                setMortalities(prev => [mortalityRecord, ...prev])
+                setPatients(prev => prev.filter(p => p.id !== removalCandidateId))
+            }
+            setRemovalCandidateId(null)
+            setShowUndoToast(true)
+            setTimeout(() => setShowUndoToast(false), 5000)
+        }
+    }, [removalCandidateId, patients, mortalities])
 
     const toggleReview = useCallback((id, isReviewed) => {
         setPatients(prev => prev.map(p =>
@@ -182,17 +288,22 @@ export default function App() {
     }, [activeTab])
 
     const clearAll = useCallback(() => {
-        setHistory(prev => [patients, ...prev].slice(0, 5))
-        setPatients(prev => prev.filter(p => (p.team || 'my_team') !== activeTab))
+        setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+        if (activeTab === 'mortalities') {
+            setMortalities([])
+        } else {
+            setPatients(prev => prev.filter(p => (p.team || 'my_team') !== activeTab))
+        }
         setShowConfirmClear(false)
         setShowUndoToast(true)
         setTimeout(() => setShowUndoToast(false), 5000)
-    }, [activeTab, patients])
+    }, [activeTab, patients, mortalities])
 
     const undo = useCallback(() => {
         if (history.length > 0) {
             const [prev, ...rest] = history
-            setPatients(prev)
+            setPatients(prev.patients)
+            setMortalities(prev.mortalities)
             setHistory(rest)
             setShowUndoToast(false)
         }
@@ -202,142 +313,259 @@ export default function App() {
     const importPatients = useCallback((incoming) => {
         const conflicts = [];
         const newOnes = [];
-        const tempHospNums = new Set(patients.filter(p => p.hospitalNumber).map(p => p.hospitalNumber));
-        const tempCombos = new Set(patients.filter(p => !p.hospitalNumber).map(p => `${p.name}|${p.ward}|${p.bed}`));
+        const isMortalityTab = activeTab === 'mortalities';
+        const defaultTeam = isMortalityTab ? 'my_team' : activeTab;
 
         incoming.forEach(_p => {
+            const isMortalityRecord = !!(
+                _p.m ||
+                _p.reason === 'mortality' ||
+                isMortalityTab
+            );
             const p = {
                 id: generateId(),
-                team: _p.team || activeTab,
+                team: _p.team || defaultTeam,
                 name: (_p.n || _p.name || '').trim(),
                 hospitalNumber: (_p.h || _p.hospitalNumber || '').trim(),
                 ward: (_p.w || _p.ward || '').trim().toUpperCase(),
                 bed: (_p.b || _p.bed || '').trim(),
                 note: (_p.t || _p.note || '').trim(),
                 critical: !!(_p.c || _p.critical),
+                reason: isMortalityRecord ? 'mortality' : undefined,
+                removedAt: _p.removedAt || (isMortalityRecord ? new Date().toISOString() : undefined),
+                originalTeam: _p.originalTeam || defaultTeam,
             };
             if (!p.name && !p.hospitalNumber && !p.ward) return;
 
             let existingMatch = null;
-            if (p.hospitalNumber && tempHospNums.has(p.hospitalNumber)) {
-                existingMatch = patients.find(ex => ex.hospitalNumber === p.hospitalNumber) || p;
-            } else if (!p.hospitalNumber && tempCombos.has(`${p.name}|${p.ward}|${p.bed}`)) {
-                existingMatch = patients.find(ex => ex.name === p.name && ex.ward === p.ward && ex.bed === p.bed) || p;
+            if (p.hospitalNumber) {
+                existingMatch = patients.find(ex => ex.hospitalNumber === p.hospitalNumber) ||
+                    mortalities.find(ex => ex.hospitalNumber === p.hospitalNumber);
+            } else {
+                const key = `${p.name}|${p.ward}|${p.bed}`;
+                existingMatch = patients.find(ex => `${ex.name}|${ex.ward}|${ex.bed}` === key) ||
+                    mortalities.find(ex => `${ex.name}|${ex.ward}|${ex.bed}` === key);
             }
 
             if (existingMatch) {
                 conflicts.push({ imported: p, existing: existingMatch });
             } else {
                 newOnes.push(p);
-                if (p.hospitalNumber) tempHospNums.add(p.hospitalNumber);
-                else tempCombos.add(`${p.name}|${p.ward}|${p.bed}`);
             }
         });
 
         if (conflicts.length > 0) {
             setPendingImport({ conflicts, newOnes });
         } else {
-            setPatients(prev => [...prev, ...newOnes]);
+            const incomingMortalities = newOnes.filter(p => p.reason === 'mortality');
+            const incomingActive = newOnes.filter(p => p.reason !== 'mortality');
+
+            if (incomingActive.length > 0) setPatients(prev => [...prev, ...incomingActive]);
+            if (incomingMortalities.length > 0) {
+                setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5));
+                setMortalities(prev => [...prev, ...incomingMortalities]);
+            }
         }
         setShowScanner(false);
-    }, [activeTab, patients]);
+    }, [activeTab, patients, mortalities])
 
     const resolveImport = useCallback((resolvedConflicts, newOnes) => {
-        setPatients(prev => {
-            let next = [...prev];
-            resolvedConflicts.forEach(res => {
-                if (res.action === 'new') {
-                    next.push(res.imported);
-                } else if (res.action === 'update') {
-                    const idx = next.findIndex(p => p.id === res.existing.id);
-                    if (idx !== -1) {
-                        next[idx] = { ...res.existing, ...res.imported, id: res.existing.id };
-                    } else {
-                        next.push(res.imported);
-                    }
-                }
-            });
-            next.push(...newOnes);
-            return next;
-        });
-        setPendingImport(null);
-    }, []);
+        setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
 
-    const activePatients = patients.filter(p => (p.team || 'my_team') === activeTab)
+        const toAddActive = [...newOnes.filter(p => p.reason !== 'mortality')];
+        const toAddMortality = [...newOnes.filter(p => p.reason === 'mortality')];
+
+        let nextPatients = [...patients];
+        let nextMortalities = [...mortalities];
+
+        resolvedConflicts.forEach(res => {
+            const p = res.imported;
+            if (res.action === 'skip') return;
+
+            if (res.action === 'new') {
+                if (p.reason === 'mortality') toAddMortality.push(p);
+                else toAddActive.push(p);
+            } else if (res.action === 'update') {
+                const activeIdx = nextPatients.findIndex(ex => ex.id === res.existing.id);
+                const mortIdx = nextMortalities.findIndex(ex => ex.id === res.existing.id);
+
+                if (p.reason === 'mortality') {
+                    if (activeIdx !== -1) nextPatients.splice(activeIdx, 1);
+                    if (mortIdx !== -1) nextMortalities[mortIdx] = { ...nextMortalities[mortIdx], ...p, id: res.existing.id };
+                    else toAddMortality.push(p);
+                } else {
+                    if (mortIdx !== -1) nextMortalities.splice(mortIdx, 1);
+                    if (activeIdx !== -1) nextPatients[activeIdx] = { ...nextPatients[activeIdx], ...p, id: res.existing.id };
+                    else toAddActive.push(p);
+                }
+            }
+        });
+
+        setPatients([...nextPatients, ...toAddActive]);
+        setMortalities([...nextMortalities, ...toAddMortality]);
+        setPendingImport(null);
+    }, [patients, mortalities]);
+
+    const activePatients = activeTab === 'mortalities'
+        ? mortalities
+        : patients.filter(p => (p.team || 'my_team') === activeTab)
+
     const myTeamCount = patients.filter(p => (p.team || 'my_team') === 'my_team').length
     const otherTeamCount = patients.filter(p => p.team === 'other_team').length
+    const mortalitiesCount = mortalities.length
+
+    const listName = activeTab === 'my_team' ? 'My Team' : activeTab === 'other_team' ? 'List B' : 'Mortalities'
+
+    const patientsToExport = selectedPatientIds.size > 0
+        ? activePatients.filter(p => selectedPatientIds.has(p.id))
+        : activePatients
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Header saveFlash={saveFlash} patientCount={patients.length} />
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-300">
+            <Header
+                saveFlash={saveFlash}
+                patientCount={patients.length}
+                darkMode={darkMode}
+                toggleDarkMode={toggleDarkMode}
+                onFeedback={() => setShowFeedback(true)}
+            />
 
             <main className="flex-1 w-full max-w-2xl mx-auto px-4 pt-6 pb-28">
-                {!showAddForm && !editingPatient ? (
-                    <button
-                        className="btn-primary w-full shadow-md mb-6 py-4 text-base"
-                        onClick={() => setShowAddForm(true)}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
-                        Add New Patient
-                    </button>
+                {!showAddForm && !editingPatient && !showMortalityForm ? (
+                    activeTab === 'mortalities' ? (
+                        <button
+                            className="btn-danger w-full shadow-md mb-6 py-4 text-base"
+                            onClick={() => setShowMortalityForm(true)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                            Add Mortality Record
+                        </button>
+                    ) : (
+                        <button
+                            className="btn-primary w-full shadow-md mb-6 py-4 text-base"
+                            onClick={() => setShowAddForm(true)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                            Add New Patient
+                        </button>
+                    )
+                ) : showMortalityForm ? (
+                    <AddPatientForm
+                        initialData={null}
+                        initialTeam="my_team"
+                        isMortalityMode
+                        onAdd={addMortality}
+                        onCancel={cancelForm}
+                    />
                 ) : (
                     <AddPatientForm
                         initialData={editingPatient}
-                        initialTeam={activeTab}
+                        initialTeam={activeTab === 'mortalities' ? 'my_team' : activeTab}
                         onAdd={savePatient}
                         onCancel={cancelForm}
                     />
                 )}
 
                 {/* Tabs */}
-                {!showAddForm && !editingPatient && (
-                    <div className="flex border-b border-gray-200 mb-4 mt-2">
+                {!showAddForm && !editingPatient && !showMortalityForm && (
+                    <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4 mt-2">
                         <button
                             onClick={() => setActiveTab('my_team')}
-                            className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'my_team' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                            className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'my_team' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                         >
                             My Team
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'my_team' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'my_team' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
                                 {myTeamCount}
                             </span>
                         </button>
                         <button
                             onClick={() => setActiveTab('other_team')}
-                            className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'other_team' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                            className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'other_team' ? 'border-purple-600 text-purple-700 dark:text-purple-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                         >
                             List B
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'other_team' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'other_team' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
                                 {otherTeamCount}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('mortalities')}
+                            className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'mortalities' ? 'border-red-600 text-red-700 dark:text-red-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                        >
+                            Mortalities
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'mortalities' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                {mortalitiesCount}
                             </span>
                         </button>
                     </div>
                 )}
 
-                {activePatients.length === 0 ? (
+                {activeTab === 'mortalities' ? (
+                    mortalities.length === 0 ? (
+                        <div className="text-center py-12 px-4 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                            <div className="bg-gray-50 dark:bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                                    <path d="M12 2v20" /><path d="m17 7-5-5-5 5" /><path d="m17 17-5 5-5-5" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">No mortality records</h3>
+                            <p className="text-gray-500 dark:text-gray-400 mt-1 max-w-[240px] mx-auto text-sm">Archived mortality records will appear here.</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            {mortalities.map(m => (
+                                <div key={m.id} className="bg-white dark:bg-gray-800 border border-red-100 dark:border-red-900/40 p-4 rounded-2xl shadow-sm relative overflow-hidden group">
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-red-500 opacity-20"></div>
+                                    <div className="flex justify-between items-start gap-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xs font-black bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 px-2 py-0.5 rounded uppercase tracking-tighter">DECEASED</span>
+                                                <h3 className="font-bold text-gray-900 dark:text-white">{m.name}</h3>
+                                            </div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 font-medium font-mono uppercase tracking-widest">{m.hospitalNumber || 'No Hosp No.'}</div>
+                                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-2 italic">Recorded: {new Date(m.removedAt).toLocaleString()}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">{m.ward}</div>
+                                            <div className="text-lg font-black text-gray-700 dark:text-gray-200">{m.bed}</div>
+                                        </div>
+                                    </div>
+                                    {m.note && (
+                                        <div className="mt-3 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg border border-gray-100 dark:border-gray-700 italic">
+                                            "{m.note}"
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )
+                ) : activePatients.length === 0 ? (
                     <EmptyState onAddClick={() => setShowAddForm(true)} />
                 ) : (
                     <PatientList
                         patients={activePatients}
                         onEdit={startEditing}
-                        onDelete={confirmDeletePatient}
+                        onDelete={startRemovalProcess}
                         onReview={toggleReview}
                         onResetReviews={resetReviews}
+                        selectedIds={selectedPatientIds}
+                        onToggleSelect={toggleSelectPatient}
+                        onToggleSelectAll={toggleSelectAll}
                     />
                 )}
             </main>
 
             {/* Bottom action bar */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur border-t border-gray-200 shadow-lg z-40">
+            <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-t border-gray-200 dark:border-gray-700 shadow-lg z-40 transition-colors duration-300">
                 <div className="max-w-2xl mx-auto px-4 py-3 flex gap-2 justify-between items-center">
                     {/* Clear All */}
                     <button
                         id="btn-clear-all"
-                        className="btn-ghost text-red-500 hover:text-red-700 hover:bg-red-50 focus:ring-red-200 text-sm px-3"
+                        className="btn-ghost text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:ring-red-200 text-sm px-3"
                         onClick={() => activePatients.length > 0 && setShowConfirmClear(true)}
                         disabled={activePatients.length === 0}
-                        aria-label={`Clear ${activeTab === 'my_team' ? 'My Team' : 'List B'}`}
+                        aria-label={`Clear ${listName}`}
                     >
-                        Clear {activeTab === 'my_team' ? 'My Team' : 'List B'}
+                        Clear {listName}
                     </button>
 
                     <div className="flex gap-2">
@@ -355,13 +583,13 @@ export default function App() {
                         {/* Export */}
                         <button
                             id="btn-export"
-                            className="btn-primary text-sm"
-                            onClick={() => setShowExport(true)}
+                            className="btn-primary text-sm relative"
+                            onClick={() => { setShowExport(true) }}
                             disabled={activePatients.length === 0}
                             aria-label="Export patient list as QR code"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /><rect width="3" height="3" x="6" y="6" rx=".5" /><rect width="3" height="3" x="17" y="6" rx=".5" /><rect width="3" height="3" x="6" y="17" rx=".5" /><path d="M21 14h-3v3h3" /><path d="M18 21v-3" /></svg>
-                            Export
+                            Export{selectedPatientIds.size > 0 ? ` (${selectedPatientIds.size})` : ''}
                         </button>
                     </div>
                 </div>
@@ -370,34 +598,34 @@ export default function App() {
             {/* Modals */}
             {showExport && (
                 <ExportModal
-                    patients={activePatients}
-                    listName={activeTab === 'my_team' ? 'My Team' : 'List B'}
-                    onClose={() => setShowExport(false)}
+                    patients={patientsToExport}
+                    listName={listName}
+                    selectionCount={selectedPatientIds.size}
+                    onClose={() => { setShowExport(false); clearSelection() }}
                 />
             )}
             {showScanner && (
                 <ScannerComponent
-                    listName={activeTab === 'my_team' ? 'My Team' : 'List B'}
+                    listName={listName}
                     onImport={importPatients}
                     onClose={() => setShowScanner(false)}
                 />
             )}
             {showConfirmClear && (
                 <ConfirmDialog
-                    title={`Clear ${activeTab === 'my_team' ? 'My Team' : 'List B'}?`}
-                    message={`This will remove all ${activePatients.length} patient${activePatients.length !== 1 ? 's' : ''} from ${activeTab === 'my_team' ? 'My Team' : 'Other Team'}. This cannot be undone.`}
+                    title={`Clear ${listName}?`}
+                    message={`This will remove all ${activePatients.length} record${activePatients.length !== 1 ? 's' : ''} from ${listName}. This cannot be undone.`}
                     confirmLabel="Yes, Clear"
                     onConfirm={clearAll}
                     onCancel={() => setShowConfirmClear(false)}
                 />
             )}
-            {deleteCandidateId && (
-                <ConfirmDialog
-                    title="Remove Patient?"
-                    message={`Are you sure you want to remove ${patients.find(p => p.id === deleteCandidateId)?.name || 'this patient'}? This cannot be undone.`}
-                    confirmLabel="Yes, Remove"
-                    onConfirm={deletePatient}
-                    onCancel={() => setDeleteCandidateId(null)}
+            {removalCandidateId && (
+                <RemovalChoiceDialog
+                    patientName={patients.find(p => p.id === removalCandidateId)?.name || 'this patient'}
+                    onDischarge={dischargePatient}
+                    onMortality={markAsMortality}
+                    onCancel={() => setRemovalCandidateId(null)}
                 />
             )}
             {pendingImport && (
@@ -407,11 +635,14 @@ export default function App() {
                     onCancel={() => setPendingImport(null)}
                 />
             )}
+            {showFeedback && (
+                <FeedbackModal onClose={() => setShowFeedback(false)} />
+            )}
 
             {/* Undo Toast */}
             {showUndoToast && (
-                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl z-[100] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <span className="text-sm font-medium">Action undone? No, wait... action completed.</span>
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white px-4 py-3 rounded-2xl shadow-2xl z-[100] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <span className="text-sm font-medium">Action completed.</span>
                     <button
                         onClick={undo}
                         className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors uppercase tracking-wider"
@@ -426,7 +657,7 @@ export default function App() {
 
             <PrintView
                 patients={activePatients}
-                listName={activeTab === 'my_team' ? 'My Team' : 'List B'}
+                listName={listName}
             />
         </div>
     )
