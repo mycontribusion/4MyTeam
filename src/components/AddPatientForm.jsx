@@ -60,6 +60,14 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
         }
 
         const result = onAdd({ team, name: n, hospitalNumber: h, ward: w, bed: bed.trim(), note: note.trim(), critical })
+        if (result === 'duplicate_hosp') {
+            setError('A patient with this Hospital Number already exists.')
+            return
+        }
+        if (result === 'duplicate_bed') {
+            setError('This Ward/Bed is already occupied by another patient.')
+            return
+        }
         if (result === 'duplicate') {
             setError('A patient with this Hospital Number or Ward/Bed already exists.')
             return

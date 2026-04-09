@@ -153,15 +153,17 @@ export default function App() {
         if (!w && !h && !n) return false
 
         // Duplicate check: same hospital number OR same ward+bed combo
-        const exists = patients.some((p) => {
+        const duplicateHosp = h && patients.some((p) => {
             if (editingPatient && p.id === editingPatient.id) return false;
+            return p.hospitalNumber === h;
+        });
+        if (duplicateHosp) return 'duplicate_hosp';
 
-            if (h && p.hospitalNumber === h) return true;
-            if (w && b && p.ward === w && p.bed === b) return true;
-            return false;
-        })
-
-        if (exists) return 'duplicate'
+        const duplicateBed = w && b && patients.some((p) => {
+            if (editingPatient && p.id === editingPatient.id) return false;
+            return p.ward === w && p.bed === b;
+        });
+        if (duplicateBed) return 'duplicate_bed';
 
         if (editingPatient) {
             const sid = editingPatient.id
