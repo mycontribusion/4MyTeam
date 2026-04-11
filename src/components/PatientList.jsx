@@ -11,7 +11,7 @@ const SORT_OPTIONS = [
     { value: 'hospnum', label: 'Hosp No.' },
 ]
 
-export default function PatientList({ patients, onDelete, onEdit, onReview, onResetReviews, selectedIds = new Set(), onToggleSelect, onToggleSelectAll }) {
+export default function PatientList({ patients, onDelete, onEdit, onReview, onResetReviews, selectedIds = new Set(), onToggleSelect, onToggleSelectAll, isMortality = false }) {
     const [sortBy, setSortBy] = useState('none')
     const [isReviewedOpen, setIsReviewedOpen] = useState(false)
 
@@ -113,6 +113,7 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
                         onReview={onReview}
                         isSelected={selectedIds.has(patient.id)}
                         onToggleSelect={onToggleSelect}
+                        isMortality={isMortality}
                     />
                 ))}
                 {sortedActive.length === 0 && reviewedPatients.length > 0 && (
@@ -152,6 +153,7 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
                                     onReview={onReview}
                                     isSelected={selectedIds.has(patient.id)}
                                     onToggleSelect={onToggleSelect}
+                                    isMortality={isMortality}
                                 />
                             ))}
                         </div>

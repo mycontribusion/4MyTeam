@@ -116,23 +116,25 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                     </div>
                 )}
 
-                {/* Critical Toggle */}
-                <div className="flex items-center justify-between mb-4 px-1 bg-gray-50/50 dark:bg-gray-700/50 p-2 rounded-xl border border-gray-100/50 dark:border-gray-600/50">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Priority</span>
-                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider text-left">Status</span>
+                {/* Critical Toggle — hidden in mortality mode */}
+                {!isMortalityMode && (
+                    <div className="flex items-center justify-between mb-4 px-1 bg-gray-50/50 dark:bg-gray-700/50 p-2 rounded-xl border border-gray-100/50 dark:border-gray-600/50">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Priority</span>
+                            <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider text-left">Status</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setCritical(!critical)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border-2 ${critical
+                                ? 'bg-red-50 text-red-600 border-red-200 shadow-sm'
+                                : 'bg-white text-gray-400 border-gray-100'}`}
+                        >
+                            <div className={`w-2 h-2 rounded-full ${critical ? 'bg-red-500 animate-pulse' : 'bg-gray-300'}`} />
+                            {critical ? 'CRITICAL' : 'NORMAL'}
+                        </button>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => setCritical(!critical)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border-2 ${critical
-                            ? 'bg-red-50 text-red-600 border-red-200 shadow-sm'
-                            : 'bg-white text-gray-400 border-gray-100'}`}
-                    >
-                        <div className={`w-2 h-2 rounded-full ${critical ? 'bg-red-500 animate-pulse' : 'bg-gray-300'}`} />
-                        {critical ? 'CRITICAL' : 'NORMAL'}
-                    </button>
-                </div>
+                )}
 
                 <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-4">
                     {/* Row 1: Name (Full width) */}

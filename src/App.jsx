@@ -167,11 +167,19 @@ export default function App() {
 
         if (editingPatient) {
             const sid = editingPatient.id
-            setPatients((prev) => prev.map(p =>
-                p.id === sid
-                    ? { ...p, team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c }
-                    : p
-            ))
+            if (editingPatient.reason === 'mortality') {
+                setMortalities(prev => prev.map(p =>
+                    p.id === sid
+                        ? { ...p, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c }
+                        : p
+                ))
+            } else {
+                setPatients((prev) => prev.map(p =>
+                    p.id === sid
+                        ? { ...p, team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c }
+                        : p
+                ))
+            }
             setEditingPatient(null)
             setTimeout(() => {
                 const el = document.getElementById(`patient-${sid}`)
@@ -247,6 +255,13 @@ export default function App() {
     const startRemovalProcess = useCallback((id) => {
         setRemovalCandidateId(id)
     }, [])
+
+    const deleteMortalityRecord = useCallback((id) => {
+        setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+        setMortalities(prev => prev.filter(p => p.id !== id))
+        setShowUndoToast(true)
+        setTimeout(() => setShowUndoToast(false), 5000)
+    }, [patients, mortalities])
 
     const dischargePatient = useCallback(() => {
         if (removalCandidateId) {
@@ -466,6 +481,7 @@ export default function App() {
                         initialTeam={activeTab === 'mortalities' ? 'my_team' : activeTab}
                         onAdd={savePatient}
                         onCancel={cancelForm}
+                        isMortalityMode={editingPatient?.reason === 'mortality'}
                     />
                 )}
 
@@ -514,32 +530,17 @@ export default function App() {
                             <p className="text-gray-500 dark:text-gray-400 mt-1 max-w-[240px] mx-auto text-sm">Archived mortality records will appear here.</p>
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-3">
-                            {mortalities.map(m => (
-                                <div key={m.id} className="bg-white dark:bg-gray-800 border border-red-100 dark:border-red-900/40 p-4 rounded-2xl shadow-sm relative overflow-hidden group">
-                                    <div className="absolute top-0 left-0 w-1 h-full bg-red-500 opacity-20"></div>
-                                    <div className="flex justify-between items-start gap-4">
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-xs font-black bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 px-2 py-0.5 rounded uppercase tracking-tighter">DECEASED</span>
-                                                <h3 className="font-bold text-gray-900 dark:text-white">{m.name}</h3>
-                                            </div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 font-medium font-mono uppercase tracking-widest">{m.hospitalNumber || 'No Hosp No.'}</div>
-                                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-2 italic">Recorded: {new Date(m.removedAt).toLocaleString()}</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">{m.ward}</div>
-                                            <div className="text-lg font-black text-gray-700 dark:text-gray-200">{m.bed}</div>
-                                        </div>
-                                    </div>
-                                    {m.note && (
-                                        <div className="mt-3 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg border border-gray-100 dark:border-gray-700 italic">
-                                            "{m.note}"
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                        <PatientList
+                            patients={mortalities}
+                            onEdit={startEditing}
+                            onDelete={deleteMortalityRecord}
+                            onReview={null}
+                            onResetReviews={() => { }}
+                            selectedIds={selectedPatientIds}
+                            onToggleSelect={toggleSelectPatient}
+                            onToggleSelectAll={toggleSelectAll}
+                            isMortality
+                        />
                     )
                 ) : activePatients.length === 0 ? (
                     <EmptyState onAddClick={() => setShowAddForm(true)} />

@@ -1,8 +1,8 @@
 import { Trash2, Pencil, CheckCircle2 } from 'lucide-react'
 import { useState, useRef } from 'react'
 
-export default function PatientCard({ patient, onEdit, onDelete, onReview, isSelected = false, onToggleSelect }) {
-    const { id, name, hospitalNumber, ward, bed, note, reviewed, critical } = patient
+export default function PatientCard({ patient, onEdit, onDelete, onReview, isSelected = false, onToggleSelect, isMortality = false }) {
+    const { id, name, hospitalNumber, ward, bed, note, reviewed, critical, removedAt } = patient
 
     const [offsetX, setOffsetX] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
@@ -30,7 +30,7 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
         setIsDragging(false);
         e.currentTarget.releasePointerCapture(e.pointerId);
 
-        if (offsetX > 80 && onReview) {
+        if (offsetX > 80 && onReview && !isMortality) {
             onReview(id, !reviewed);
         } else if (offsetX < -80) {
             onDelete(id);
@@ -41,7 +41,9 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
 
     // Generate a color based on ward or name or id string for visual variety
     const colorStr = ward || name || id || ''
-    const wardColors = [
+    const wardColors = isMortality ? [
+        'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/40',
+    ] : [
         'bg-blue-100 text-blue-800 border-blue-200',
         'bg-purple-100 text-purple-800 border-purple-200',
         'bg-teal-100 text-teal-800 border-teal-200',
@@ -58,8 +60,12 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
             {/* Background Actions */}
             <div className={`absolute inset-0 flex justify-between items-center px-6 transition-colors duration-200 ${offsetX > 0 ? (reviewed ? 'bg-gray-200' : 'bg-green-100') : (offsetX < 0 ? 'bg-red-100' : 'bg-transparent')}`}>
                 <div className={`font-bold tracking-widest text-lg flex items-center gap-2 transition-opacity ${offsetX > 20 ? 'opacity-100' : 'opacity-0'} ${reviewed ? 'text-gray-600' : 'text-green-700'}`}>
-                    <CheckCircle2 size={24} />
-                    {reviewed ? 'UN-REVIEW' : 'REVIEWED'}
+                    {!isMortality && (
+                        <>
+                            <CheckCircle2 size={24} />
+                            {reviewed ? 'UN-REVIEW' : 'REVIEWED'}
+                        </>
+                    )}
                 </div>
                 <div className={`font-bold tracking-widest text-lg flex items-center gap-2 transition-opacity ${offsetX < -20 ? 'opacity-100 text-red-600' : 'opacity-0'}`}>
                     REMOVE
@@ -72,13 +78,14 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
                 className={`card p-4 flex flex-col sm:flex-row gap-4 group relative z-10 touch-pan-y
                     ${isDragging ? 'transition-none' : 'transition-transform duration-300'} 
                     ${isSelected ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-1' : ''}
-                    ${reviewed ? 'opacity-70 bg-gray-50 dark:bg-gray-800/50 grayscale-[15%]' : critical ? 'bg-red-50/40 dark:bg-red-900/10 border-red-200 dark:border-red-800 shadow-sm shadow-red-100/50' : 'bg-white dark:bg-gray-800'}`}
+                    ${reviewed ? 'opacity-70 bg-gray-50 dark:bg-gray-800/50 grayscale-[15%]' : isMortality ? 'bg-white dark:bg-gray-800 border-red-100 dark:border-red-950 shadow-sm' : critical ? 'bg-red-50/40 dark:bg-red-900/10 border-red-200 dark:border-red-800 shadow-sm shadow-red-100/50' : 'bg-white dark:bg-gray-800'}`}
                 style={{ transform: `translateX(${offsetX}px)` }}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
             >
+                {isMortality && <div className="absolute top-0 left-0 w-1 h-full bg-red-500 opacity-20"></div>}
                 <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
 
                     {/* Left Column (Badge + Mobile Actions) */}
@@ -122,7 +129,9 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
                     {/* Patient Info */}
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                            {critical && !reviewed && (
+                            {isMortality ? (
+                                <span className="text-[10px] font-black bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 px-2 py-0.5 rounded uppercase tracking-tighter">DECEASED</span>
+                            ) : critical && !reviewed && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white animate-pulse tracking-tighter">
                                     CRITICAL
                                 </span>
@@ -136,6 +145,11 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
                         </div>
                         {(!name && !hospitalNumber) && (
                             <div className="text-sm font-medium text-gray-500 dark:text-gray-400 italic">No name provided</div>
+                        )}
+                        {isMortality && removedAt && (
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 italic leading-none">
+                                Recorded: {new Date(removedAt).toLocaleString()}
+                            </div>
                         )}
                         {note && <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 overflow-y-auto" style={{ whiteSpace: 'pre-wrap', maxHeight: '5.5rem' }}>{note}</div>}
                     </div>
