@@ -58,9 +58,9 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
                 {/* Title & Badge */}
                 <div className="flex items-center gap-3">
                     <h2 className="font-semibold text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider">
-                        Patient List
+                        {isMortality ? 'Mortality Records' : 'Patient List'}
                     </h2>
-                    <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-bold px-2.5 py-1 rounded-full">
+                    <span className={`${isMortality ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'} text-xs font-bold px-2.5 py-1 rounded-full`}>
                         {activePatients.length}
                     </span>
                 </div>
@@ -102,7 +102,7 @@ export default function PatientList({ patients, onDelete, onEdit, onReview, onRe
             <div
                 role="list"
                 className="flex flex-col gap-3 mb-6"
-                aria-label="Patient list"
+                aria-label={isMortality ? "Mortality list" : "Patient list"}
             >
                 {sortedActive.map((patient) => (
                     <PatientCard
