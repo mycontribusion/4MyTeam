@@ -230,7 +230,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                             ref={noteRef}
                             rows={1}
                             className="input-field text-left text-sm resize-none"
-                            placeholder="Requires fasting..."
+                            placeholder="Add a note"
                             value={note}
                             onChange={(e) => { setNote(e.target.value); setError(''); autoGrow(e.target) }}
                             autoComplete="off"
