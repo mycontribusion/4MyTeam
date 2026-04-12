@@ -13,6 +13,8 @@ import FeedbackModal from './components/FeedbackModal'
 
 const STORAGE_KEY = '4myteam_patients'
 const MORTALITIES_KEY = '4myteam_mortalities'
+const DISCHARGES_KEY = '4myteam_discharges'
+const DISCHARGES_RESET_KEY = '4myteam_discharges_reset'
 const DARK_MODE_KEY = '4myteam_darkmode'
 
 function generateId() {
@@ -84,6 +86,22 @@ export default function App() {
             return []
         }
     })
+    const [discharges, setDischarges] = useState(() => {
+        try {
+            const stored = localStorage.getItem(DISCHARGES_KEY)
+            return stored ? JSON.parse(stored) : []
+        } catch {
+            return []
+        }
+    })
+    const [dischargesResetDate, setDischargesResetDate] = useState(() => {
+        try {
+            const stored = localStorage.getItem(DISCHARGES_RESET_KEY)
+            return stored || new Date().toLocaleDateString()
+        } catch {
+            return new Date().toLocaleDateString()
+        }
+    })
     const [darkMode, setDarkMode] = useState(() => {
         try {
             const stored = localStorage.getItem(DARK_MODE_KEY)
@@ -97,6 +115,7 @@ export default function App() {
     const [showExport, setShowExport] = useState(false)
     const [showScanner, setShowScanner] = useState(false)
     const [showConfirmClear, setShowConfirmClear] = useState(false)
+    const [showConfirmResetStats, setShowConfirmResetStats] = useState(false)
     const [showAddForm, setShowAddForm] = useState(false)
     const [showMortalityForm, setShowMortalityForm] = useState(false)
     const [showFeedback, setShowFeedback] = useState(false)
@@ -104,7 +123,7 @@ export default function App() {
     const [removalCandidateId, setRemovalCandidateId] = useState(null)
     const [saveFlash, setSaveFlash] = useState(false)
     const [pendingImport, setPendingImport] = useState(null)
-    const [history, setHistory] = useState([]) // Stack of { patients, mortalities } objects
+    const [history, setHistory] = useState([]) // Stack of { patients, mortalities, discharges } objects
     const [showUndoToast, setShowUndoToast] = useState(false)
     const [selectedPatientIds, setSelectedPatientIds] = useState(new Set())
 
@@ -141,6 +160,15 @@ export default function App() {
             // localStorage full / unavailable
         }
     }, [mortalities])
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(DISCHARGES_KEY, JSON.stringify(discharges))
+            localStorage.setItem(DISCHARGES_RESET_KEY, dischargesResetDate)
+        } catch {
+            // localStorage full / unavailable
+        }
+    }, [discharges, dischargesResetDate])
 
     const savePatient = useCallback(({ team = 'my_team', name, hospitalNumber, ward, bed, note, critical = false }) => {
         const n = name.trim()
@@ -216,11 +244,11 @@ export default function App() {
             removedAt: new Date().toISOString(),
             originalTeam: 'my_team',
         }
-        setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+        setHistory(prev => [{ patients, mortalities, discharges }, ...prev].slice(0, 5))
         setMortalities(prev => [record, ...prev])
         setShowMortalityForm(false)
         return true
-    }, [patients, mortalities])
+    }, [patients, mortalities, discharges])
 
     const startEditing = useCallback((patient) => {
         setEditingPatient(patient)
@@ -257,27 +285,31 @@ export default function App() {
     }, [])
 
     const deleteMortalityRecord = useCallback((id) => {
-        setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+        setHistory(prev => [{ patients, mortalities, discharges }, ...prev].slice(0, 5))
         setMortalities(prev => prev.filter(p => p.id !== id))
         setShowUndoToast(true)
         setTimeout(() => setShowUndoToast(false), 5000)
-    }, [patients, mortalities])
+    }, [patients, mortalities, discharges])
 
     const dischargePatient = useCallback(() => {
         if (removalCandidateId) {
-            setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+            const patient = patients.find(p => p.id === removalCandidateId)
+            setHistory(prev => [{ patients, mortalities, discharges }, ...prev].slice(0, 5))
             setPatients((prev) => prev.filter((p) => p.id !== removalCandidateId))
+            if (patient) {
+                setDischarges(prev => [...prev, { id: removalCandidateId, team: patient.team || 'my_team', date: new Date().toISOString() }])
+            }
             setRemovalCandidateId(null)
             setShowUndoToast(true)
             setTimeout(() => setShowUndoToast(false), 5000)
         }
-    }, [removalCandidateId, patients, mortalities])
+    }, [removalCandidateId, patients, mortalities, discharges])
 
     const markAsMortality = useCallback(() => {
         if (removalCandidateId) {
             const deceased = patients.find(p => p.id === removalCandidateId)
             if (deceased) {
-                setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+                setHistory(prev => [{ patients, mortalities, discharges }, ...prev].slice(0, 5))
                 const mortalityRecord = {
                     ...deceased,
                     removedAt: new Date().toISOString(),
@@ -291,7 +323,7 @@ export default function App() {
             setShowUndoToast(true)
             setTimeout(() => setShowUndoToast(false), 5000)
         }
-    }, [removalCandidateId, patients, mortalities])
+    }, [removalCandidateId, patients, mortalities, discharges])
 
     const toggleReview = useCallback((id, isReviewed) => {
         setPatients(prev => prev.map(p =>
@@ -306,7 +338,7 @@ export default function App() {
     }, [activeTab])
 
     const clearAll = useCallback(() => {
-        setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+        setHistory(prev => [{ patients, mortalities, discharges }, ...prev].slice(0, 5))
         if (activeTab === 'mortalities') {
             setMortalities([])
         } else {
@@ -315,17 +347,27 @@ export default function App() {
         setShowConfirmClear(false)
         setShowUndoToast(true)
         setTimeout(() => setShowUndoToast(false), 5000)
-    }, [activeTab, patients, mortalities])
+    }, [activeTab, patients, mortalities, discharges])
 
     const undo = useCallback(() => {
         if (history.length > 0) {
             const [prev, ...rest] = history
             setPatients(prev.patients)
             setMortalities(prev.mortalities)
+            setDischarges(prev.discharges)
             setHistory(rest)
             setShowUndoToast(false)
         }
     }, [history])
+
+    const resetDischarges = useCallback(() => {
+        setHistory(prev => [{ patients, mortalities, discharges }, ...prev].slice(0, 5))
+        setDischarges(prev => prev.filter(d => d.team !== activeTab))
+        setDischargesResetDate(new Date().toLocaleDateString())
+        setShowConfirmResetStats(false)
+        setShowUndoToast(true)
+        setTimeout(() => setShowUndoToast(false), 5000)
+    }, [activeTab, patients, mortalities, discharges])
 
     // Merge imported patients, deduplicate
     const importPatients = useCallback((incoming) => {
@@ -380,15 +422,15 @@ export default function App() {
 
             if (incomingActive.length > 0) setPatients(prev => [...prev, ...incomingActive]);
             if (incomingMortalities.length > 0) {
-                setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5));
+                setHistory(prev => [{ patients, mortalities, discharges }, ...prev].slice(0, 5));
                 setMortalities(prev => [...prev, ...incomingMortalities]);
             }
         }
         setShowScanner(false);
-    }, [activeTab, patients, mortalities])
+    }, [activeTab, patients, mortalities, discharges])
 
     const resolveImport = useCallback((resolvedConflicts, newOnes) => {
-        setHistory(prev => [{ patients, mortalities }, ...prev].slice(0, 5))
+        setHistory(prev => [{ patients, mortalities, discharges }, ...prev].slice(0, 5))
 
         const toAddActive = [...newOnes.filter(p => p.reason !== 'mortality')];
         const toAddMortality = [...newOnes.filter(p => p.reason === 'mortality')];
@@ -431,6 +473,8 @@ export default function App() {
     const myTeamCount = patients.filter(p => (p.team || 'my_team') === 'my_team').length
     const otherTeamCount = patients.filter(p => p.team === 'other_team').length
     const mortalitiesCount = mortalities.length
+    const dischargeCount = discharges.filter(d => d.team === 'my_team').length
+    const otherDischargeCount = discharges.filter(d => d.team === 'other_team').length
 
     const listName = activeTab === 'my_team' ? 'My Team' : activeTab === 'other_team' ? 'List B' : 'Mortalities'
 
@@ -556,6 +600,33 @@ export default function App() {
                         onToggleSelectAll={toggleSelectAll}
                     />
                 )}
+
+                {activeTab === 'my_team' && (
+                    <div className="mt-8 pt-4 border-t border-gray-100 dark:border-gray-800 text-center flex flex-col items-center gap-2">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest italic">
+                            {dischargeCount} patient{dischargeCount !== 1 ? 's' : ''} discharges since {dischargesResetDate}
+                        </p>
+                        <button
+                            onClick={() => setShowConfirmResetStats(true)}
+                            className="text-[10px] font-black text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 uppercase tracking-tighter"
+                        >
+                            Reset Stats
+                        </button>
+                    </div>
+                )}
+                {activeTab === 'other_team' && (
+                    <div className="mt-8 pt-4 border-t border-gray-100 dark:border-gray-800 text-center flex flex-col items-center gap-2">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest italic">
+                            {otherDischargeCount} patient{otherDischargeCount !== 1 ? 's' : ''} discharges since {dischargesResetDate}
+                        </p>
+                        <button
+                            onClick={() => setShowConfirmResetStats(true)}
+                            className="text-[10px] font-black text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 uppercase tracking-tighter"
+                        >
+                            Reset Stats
+                        </button>
+                    </div>
+                )}
             </main>
 
             {/* Bottom action bar */}
@@ -626,6 +697,15 @@ export default function App() {
                     confirmLabel="Yes, Clear"
                     onConfirm={clearAll}
                     onCancel={() => setShowConfirmClear(false)}
+                />
+            )}
+            {showConfirmResetStats && (
+                <ConfirmDialog
+                    title="Reset Discharge Stats?"
+                    message={`This will reset the discharge count for ${listName} and update the start date to today. This can be undone.`}
+                    confirmLabel="Yes, Reset"
+                    onConfirm={resetDischarges}
+                    onCancel={() => setShowConfirmResetStats(false)}
                 />
             )}
             {removalCandidateId && (
