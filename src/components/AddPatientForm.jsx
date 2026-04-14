@@ -1,6 +1,31 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Plus, Save } from 'lucide-react'
 
+const DRAFT_KEY = '4myteam_draft_patient'
+
+function loadDraft() {
+    try {
+        const raw = localStorage.getItem(DRAFT_KEY)
+        return raw ? JSON.parse(raw) : null
+    } catch {
+        return null
+    }
+}
+
+function saveDraft(data) {
+    try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(data))
+    } catch {
+        // storage quota exceeded — silently ignore
+    }
+}
+
+function clearDraft() {
+    try {
+        localStorage.removeItem(DRAFT_KEY)
+    } catch { /* ignore */ }
+}
+
 export default function AddPatientForm({ onAdd, onCancel, initialData, initialTeam = 'my_team', isMortalityMode = false }) {
     const [team, setTeam] = useState(initialTeam)
     const [name, setName] = useState('')
@@ -10,7 +35,9 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
     const [note, setNote] = useState('')
     const [critical, setCritical] = useState(false)
     const [error, setError] = useState('')
+    const [draftRestored, setDraftRestored] = useState(false)
 
+    // Populate form — edit mode uses initialData; add mode checks for a saved draft
     useEffect(() => {
         if (initialData) {
             setTeam(initialData.team || 'my_team')
@@ -20,6 +47,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             setBed(initialData.bed || '')
             setNote(initialData.note || '')
             setCritical(!!initialData.critical)
+            setDraftRestored(false)
         } else {
             setTeam(initialTeam)
             setName('')
@@ -28,8 +56,32 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             setBed('')
             setNote('')
             setCritical(false)
+
+            if (!isMortalityMode) {
+                const draft = loadDraft()
+                if (draft && Object.values(draft).some(v => v !== '' && v !== false && v !== initialTeam)) {
+                    setTeam(draft.team ?? initialTeam)
+                    setName(draft.name ?? '')
+                    setHospitalNumber(draft.hospitalNumber ?? '')
+                    setWard(draft.ward ?? '')
+                    setBed(draft.bed ?? '')
+                    setNote(draft.note ?? '')
+                    setCritical(!!draft.critical)
+                    setDraftRestored(true)
+                }
+            }
         }
-    }, [initialData, initialTeam])
+    }, [initialData, initialTeam, isMortalityMode])
+
+    // Debounced draft save — only for new-patient mode, not edit or mortality
+    const saveTimerRef = useRef(null)
+    const scheduleDraftSave = useCallback((patch) => {
+        if (initialData || isMortalityMode) return
+        clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = setTimeout(() => saveDraft(patch), 500)
+    }, [initialData, isMortalityMode])
+
+    useEffect(() => () => clearTimeout(saveTimerRef.current), [])
 
     const hospNumRef = useRef(null)
     const wardRef = useRef(null)
@@ -45,6 +97,11 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
     useEffect(() => {
         autoGrow(noteRef.current)
     }, [note, autoGrow])
+
+    // Helper to build current draft snapshot
+    const currentDraft = useCallback((overrides = {}) => ({
+        team, name, hospitalNumber, ward, bed, note, critical, ...overrides
+    }), [team, name, hospitalNumber, ward, bed, note, critical])
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -73,6 +130,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             return
         }
         if (result) {
+            clearDraft()
             setName('')
             setHospitalNumber('')
             setWard('')
@@ -80,6 +138,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             setNote('')
             setCritical(false)
             setError('')
+            setDraftRestored(false)
         }
     }
 
@@ -95,20 +154,42 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             <h2 className="hidden sm:block font-semibold text-gray-700 dark:text-gray-300 text-sm mb-3 uppercase tracking-wider">
                 {isMortalityMode ? 'Add Mortality Record' : initialData ? 'Edit Patient' : 'Add Patient'}
             </h2>
+
+            {/* Draft restored notice */}
+            {draftRestored && (
+                <div
+                    role="status"
+                    className="flex items-center justify-between gap-2 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-2 text-xs font-medium mb-3"
+                >
+                    <span className="flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></svg>
+                        Draft restored from your last session
+                    </span>
+                    <button
+                        type="button"
+                        aria-label="Dismiss draft notice"
+                        onClick={() => setDraftRestored(false)}
+                        className="text-blue-400 dark:text-blue-500 hover:text-blue-600 dark:hover:text-blue-300 transition-colors leading-none"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
+
             <form id="add-patient-form" onSubmit={handleSubmit}>
                 {/* Team Selector — hidden in mortality mode */}
                 {!isMortalityMode && (
                     <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl mb-4 sm:mb-5">
                         <button
                             type="button"
-                            onClick={() => setTeam('my_team')}
+                            onClick={() => { setTeam('my_team'); scheduleDraftSave(currentDraft({ team: 'my_team' })) }}
                             className={`flex-1 text-xs sm:text-sm font-semibold py-2 rounded-lg transition-all ${team === 'my_team' ? 'bg-white dark:bg-gray-600 text-blue-700 dark:text-blue-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                         >
                             My Team
                         </button>
                         <button
                             type="button"
-                            onClick={() => setTeam('other_team')}
+                            onClick={() => { setTeam('other_team'); scheduleDraftSave(currentDraft({ team: 'other_team' })) }}
                             className={`flex-1 text-xs sm:text-sm font-semibold py-2 rounded-lg transition-all ${team === 'other_team' ? 'bg-white dark:bg-gray-600 text-purple-700 dark:text-purple-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                         >
                             List B
@@ -125,7 +206,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                         </div>
                         <button
                             type="button"
-                            onClick={() => setCritical(!critical)}
+                            onClick={() => { const next = !critical; setCritical(next); scheduleDraftSave(currentDraft({ critical: next })) }}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border-2 ${critical
                                 ? 'bg-red-50 text-red-600 border-red-200 shadow-sm'
                                 : 'bg-white text-gray-400 border-gray-100'}`}
@@ -155,6 +236,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                                 }
                                 setName(val)
                                 setError('')
+                                scheduleDraftSave(currentDraft({ name: val }))
                             }}
                             onKeyDown={(e) => handleKeyDown(e, hospNumRef)}
                             autoCapitalize="words"
@@ -175,7 +257,11 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                                 className="input-field text-center font-bold text-sm"
                                 placeholder="H-123456"
                                 value={hospitalNumber}
-                                onChange={(e) => { setHospitalNumber(e.target.value); setError('') }}
+                                onChange={(e) => {
+                                    setHospitalNumber(e.target.value)
+                                    setError('')
+                                    scheduleDraftSave(currentDraft({ hospitalNumber: e.target.value }))
+                                }}
                                 onKeyDown={(e) => handleKeyDown(e, wardRef)}
                                 autoComplete="off"
                             />
@@ -191,7 +277,11 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                                 className="input-field text-center font-bold uppercase text-sm tracking-wider"
                                 placeholder="A1"
                                 value={ward}
-                                onChange={(e) => { setWard(e.target.value); setError('') }}
+                                onChange={(e) => {
+                                    setWard(e.target.value)
+                                    setError('')
+                                    scheduleDraftSave(currentDraft({ ward: e.target.value }))
+                                }}
                                 onKeyDown={(e) => handleKeyDown(e, bedRef)}
                                 maxLength={10}
                                 autoCapitalize="characters"
@@ -210,7 +300,11 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                                 className="input-field text-center font-bold text-sm"
                                 placeholder="12"
                                 value={bed}
-                                onChange={(e) => { setBed(e.target.value); setError('') }}
+                                onChange={(e) => {
+                                    setBed(e.target.value)
+                                    setError('')
+                                    scheduleDraftSave(currentDraft({ bed: e.target.value }))
+                                }}
                                 onKeyDown={(e) => handleKeyDown(e, noteRef)}
                                 maxLength={10}
                                 autoComplete="off"
@@ -232,7 +326,12 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                             className="input-field text-left text-sm resize-none"
                             placeholder="Add a note"
                             value={note}
-                            onChange={(e) => { setNote(e.target.value); setError(''); autoGrow(e.target) }}
+                            onChange={(e) => {
+                                setNote(e.target.value)
+                                setError('')
+                                autoGrow(e.target)
+                                scheduleDraftSave(currentDraft({ note: e.target.value }))
+                            }}
                             autoComplete="off"
                             style={{ minHeight: '40px', maxHeight: '240px', overflowY: 'auto' }}
                         />
