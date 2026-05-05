@@ -153,7 +153,7 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
                         )}
                         {!isMortality && lastUpdated && (
                             <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 italic leading-none">
-                                Documented: {new Date(lastUpdated).toLocaleString([], {
+                                Last Update: {new Date(lastUpdated).toLocaleString([], {
                                     day: 'numeric', month: 'short', year: 'numeric',
                                     hour: '2-digit', minute: '2-digit'
                                 })}
