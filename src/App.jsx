@@ -170,7 +170,7 @@ export default function App() {
         }
     }, [discharges, dischargesResetDate])
 
-    const savePatient = useCallback(({ team = 'my_team', name, hospitalNumber, ward, bed, note, critical = false }) => {
+    const savePatient = useCallback(({ team = 'my_team', name, hospitalNumber, ward, bed, note, critical = false, admissionDate }) => {
         const n = name.trim()
         const h = hospitalNumber.trim()
         const w = ward.trim().toUpperCase()
@@ -198,13 +198,13 @@ export default function App() {
             if (editingPatient.reason === 'mortality') {
                 setMortalities(prev => prev.map(p =>
                     p.id === sid
-                        ? { ...p, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c }
+                        ? { ...p, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c, admissionDate }
                         : p
                 ))
             } else {
                 setPatients((prev) => prev.map(p =>
                     p.id === sid
-                        ? { ...p, team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c, lastUpdated: new Date().toISOString() }
+                        ? { ...p, team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c, admissionDate, lastUpdated: new Date().toISOString() }
                         : p
                 ))
             }
@@ -220,7 +220,7 @@ export default function App() {
         } else {
             setPatients((prev) => [
                 ...prev,
-                { id: generateId(), team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c, lastUpdated: new Date().toISOString() },
+                { id: generateId(), team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c, admissionDate, lastUpdated: new Date().toISOString() },
             ])
         }
         return true
@@ -392,6 +392,7 @@ export default function App() {
                 note: (_p.t || _p.note || '').trim(),
                 critical: !!(_p.c || _p.critical),
                 reason: isMortalityRecord ? 'mortality' : undefined,
+                admissionDate: _p.ad || _p.admissionDate || new Date().toISOString().split('T')[0],
                 lastUpdated: _p.u || _p.lastUpdated || (isMortalityRecord ? undefined : new Date().toISOString()),
                 removedAt: _p.removedAt || (isMortalityRecord ? new Date().toISOString() : undefined),
                 originalTeam: _p.originalTeam || defaultTeam,

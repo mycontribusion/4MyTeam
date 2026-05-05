@@ -2,7 +2,15 @@ import { Trash2, Pencil, CheckCircle2 } from 'lucide-react'
 import { useState, useRef } from 'react'
 
 export default function PatientCard({ patient, onEdit, onDelete, onReview, isSelected = false, onToggleSelect, isMortality = false }) {
-    const { id, name, hospitalNumber, ward, bed, note, reviewed, critical, removedAt, lastUpdated } = patient
+    const { id, name, hospitalNumber, ward, bed, note, reviewed, critical, removedAt, lastUpdated, admissionDate } = patient
+
+    let durationText = '';
+    if (admissionDate && !isMortality) {
+        let diffMs = Date.now() - new Date(admissionDate).getTime();
+        if (diffMs < 0) diffMs = 0;
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        durationText = `• ${days} day${days !== 1 ? 's' : ''}`;
+    }
 
     const [offsetX, setOffsetX] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
@@ -140,6 +148,11 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
                             {hospitalNumber && (
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis ${reviewed ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-500 line-through' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
                                     {hospitalNumber}
+                                </span>
+                            )}
+                            {durationText && (
+                                <span className="text-[10px] text-gray-400 font-medium italic whitespace-nowrap ml-1 flex-shrink-0">
+                                    {durationText}
                                 </span>
                             )}
                         </div>

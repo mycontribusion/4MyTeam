@@ -34,6 +34,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
     const [bed, setBed] = useState('')
     const [note, setNote] = useState('')
     const [critical, setCritical] = useState(false)
+    const [admissionDate, setAdmissionDate] = useState(() => new Date().toISOString().split('T')[0])
     const [error, setError] = useState('')
     const [draftRestored, setDraftRestored] = useState(false)
 
@@ -47,6 +48,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             setBed(initialData.bed || '')
             setNote(initialData.note || '')
             setCritical(!!initialData.critical)
+            setAdmissionDate(initialData.admissionDate || new Date().toISOString().split('T')[0])
             setDraftRestored(false)
         } else {
             setTeam(initialTeam)
@@ -56,6 +58,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             setBed('')
             setNote('')
             setCritical(false)
+            setAdmissionDate(new Date().toISOString().split('T')[0])
 
             if (!isMortalityMode) {
                 const draft = loadDraft()
@@ -67,6 +70,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                     setBed(draft.bed ?? '')
                     setNote(draft.note ?? '')
                     setCritical(!!draft.critical)
+                    setAdmissionDate(draft.admissionDate ?? new Date().toISOString().split('T')[0])
                     setDraftRestored(true)
                 }
             }
@@ -100,8 +104,8 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
 
     // Helper to build current draft snapshot
     const currentDraft = useCallback((overrides = {}) => ({
-        team, name, hospitalNumber, ward, bed, note, critical, ...overrides
-    }), [team, name, hospitalNumber, ward, bed, note, critical])
+        team, name, hospitalNumber, ward, bed, note, critical, admissionDate, ...overrides
+    }), [team, name, hospitalNumber, ward, bed, note, critical, admissionDate])
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -116,7 +120,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             return
         }
 
-        const result = onAdd({ team, name: n, hospitalNumber: h, ward: w, bed: bed.trim(), note: note.trim(), critical })
+        const result = onAdd({ team, name: n, hospitalNumber: h, ward: w, bed: bed.trim(), note: note.trim(), critical, admissionDate })
         if (result === 'duplicate_hosp') {
             setError('A patient with this Hospital Number already exists.')
             return
@@ -137,6 +141,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
             setBed('')
             setNote('')
             setCritical(false)
+            setAdmissionDate(new Date().toISOString().split('T')[0])
             setError('')
             setDraftRestored(false)
         }
@@ -314,7 +319,26 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                         </div>
                     </div>
 
-                    {/* Row 3: Note (Full width) */}
+                    {/* Row 3: Admission Date */}
+                    <div>
+                        <label htmlFor="input-admission" className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 flex justify-between">
+                            <span>Admission Date</span>
+                            <span className="font-normal opacity-70">Optional</span>
+                        </label>
+                        <input
+                            id="input-admission"
+                            type="date"
+                            className="input-field text-left font-medium text-sm text-gray-600 dark:text-gray-300"
+                            value={admissionDate}
+                            onChange={(e) => {
+                                setAdmissionDate(e.target.value)
+                                scheduleDraftSave(currentDraft({ admissionDate: e.target.value }))
+                            }}
+                            onKeyDown={(e) => handleKeyDown(e, noteRef)}
+                        />
+                    </div>
+
+                    {/* Row 4: Note (Full width) */}
                     <div>
                         <label htmlFor="input-note" className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">
                             Note
@@ -337,7 +361,7 @@ export default function AddPatientForm({ onAdd, onCancel, initialData, initialTe
                         />
                     </div>
 
-                    {/* Row 4: Buttons (Right aligned) */}
+                    {/* Row 5: Buttons (Right aligned) */}
                     <div className="flex justify-end gap-2 mt-1">
                         <button
                             type="button"
