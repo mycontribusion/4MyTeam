@@ -15,6 +15,7 @@ export default function ExportModal({ patients, listName, onClose }) {
         if (p.hospitalNumber) obj.h = p.hospitalNumber
         if (p.critical) obj.c = true
         if (p.reason === 'mortality') obj.m = true
+        if (p.lastUpdated) obj.u = p.lastUpdated
         return obj
     })
     const qrData = JSON.stringify(qrCompressed)
@@ -32,6 +33,7 @@ export default function ExportModal({ patients, listName, onClose }) {
             obj.reason = 'mortality'
             obj.removedAt = p.removedAt
         }
+        if (p.lastUpdated) obj.lastUpdated = p.lastUpdated
         return obj
     })
     const fullData = JSON.stringify(fullCompressed)

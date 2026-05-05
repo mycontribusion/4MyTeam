@@ -151,7 +151,6 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
                                 Recorded: {new Date(removedAt).toLocaleString()}
                             </div>
                         )}
-                        {note && <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 overflow-y-auto" style={{ whiteSpace: 'pre-wrap', maxHeight: '5.5rem' }}>{note}</div>}
                         {!isMortality && lastUpdated && (
                             <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 italic leading-none">
                                 Documented: {new Date(lastUpdated).toLocaleString([], {
@@ -160,6 +159,7 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
                                 })}
                             </div>
                         )}
+                        {note && <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 overflow-y-auto" style={{ whiteSpace: 'pre-wrap', maxHeight: '5.5rem' }}>{note}</div>}
                     </div>
                 </div>
 

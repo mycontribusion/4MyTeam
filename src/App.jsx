@@ -392,6 +392,7 @@ export default function App() {
                 note: (_p.t || _p.note || '').trim(),
                 critical: !!(_p.c || _p.critical),
                 reason: isMortalityRecord ? 'mortality' : undefined,
+                lastUpdated: _p.u || _p.lastUpdated || (isMortalityRecord ? undefined : new Date().toISOString()),
                 removedAt: _p.removedAt || (isMortalityRecord ? new Date().toISOString() : undefined),
                 originalTeam: _p.originalTeam || defaultTeam,
             };
