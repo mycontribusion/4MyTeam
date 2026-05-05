@@ -2,7 +2,7 @@ import { Trash2, Pencil, CheckCircle2 } from 'lucide-react'
 import { useState, useRef } from 'react'
 
 export default function PatientCard({ patient, onEdit, onDelete, onReview, isSelected = false, onToggleSelect, isMortality = false }) {
-    const { id, name, hospitalNumber, ward, bed, note, reviewed, critical, removedAt } = patient
+    const { id, name, hospitalNumber, ward, bed, note, reviewed, critical, removedAt, lastUpdated } = patient
 
     const [offsetX, setOffsetX] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
@@ -152,6 +152,14 @@ export default function PatientCard({ patient, onEdit, onDelete, onReview, isSel
                             </div>
                         )}
                         {note && <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 overflow-y-auto" style={{ whiteSpace: 'pre-wrap', maxHeight: '5.5rem' }}>{note}</div>}
+                        {!isMortality && lastUpdated && (
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 italic leading-none">
+                                Documented: {new Date(lastUpdated).toLocaleString([], {
+                                    day: 'numeric', month: 'short', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
 

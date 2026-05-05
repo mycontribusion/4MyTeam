@@ -204,7 +204,7 @@ export default function App() {
             } else {
                 setPatients((prev) => prev.map(p =>
                     p.id === sid
-                        ? { ...p, team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c }
+                        ? { ...p, team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c, lastUpdated: new Date().toISOString() }
                         : p
                 ))
             }
@@ -220,7 +220,7 @@ export default function App() {
         } else {
             setPatients((prev) => [
                 ...prev,
-                { id: generateId(), team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c },
+                { id: generateId(), team, name: n, hospitalNumber: h, ward: w, bed: b, note: t, critical: c, lastUpdated: new Date().toISOString() },
             ])
         }
         return true
