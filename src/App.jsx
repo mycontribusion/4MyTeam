@@ -10,6 +10,7 @@ import EmptyState from './components/EmptyState'
 import ReviewDuplicatesModal from './components/ReviewDuplicatesModal'
 import RemovalChoiceDialog from './components/RemovalChoiceDialog'
 import FeedbackModal from './components/FeedbackModal'
+import { get, set } from 'idb-keyval'
 
 const STORAGE_KEY = '4myteam_patients'
 const MORTALITIES_KEY = '4myteam_mortalities'
@@ -70,38 +71,11 @@ function PrintView({ patients, listName }) {
 
 export default function App() {
     const [activeTab, setActiveTab] = useState('my_team') // 'my_team' | 'other_team' | 'mortalities'
-    const [patients, setPatients] = useState(() => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY)
-            return stored ? JSON.parse(stored) : []
-        } catch {
-            return []
-        }
-    })
-    const [mortalities, setMortalities] = useState(() => {
-        try {
-            const stored = localStorage.getItem(MORTALITIES_KEY)
-            return stored ? JSON.parse(stored) : []
-        } catch {
-            return []
-        }
-    })
-    const [discharges, setDischarges] = useState(() => {
-        try {
-            const stored = localStorage.getItem(DISCHARGES_KEY)
-            return stored ? JSON.parse(stored) : []
-        } catch {
-            return []
-        }
-    })
-    const [dischargesResetDate, setDischargesResetDate] = useState(() => {
-        try {
-            const stored = localStorage.getItem(DISCHARGES_RESET_KEY)
-            return stored || new Date().toLocaleDateString()
-        } catch {
-            return new Date().toLocaleDateString()
-        }
-    })
+    const [isLoaded, setIsLoaded] = useState(false)
+    const [patients, setPatients] = useState([])
+    const [mortalities, setMortalities] = useState([])
+    const [discharges, setDischarges] = useState([])
+    const [dischargesResetDate, setDischargesResetDate] = useState(new Date().toLocaleDateString())
     const [darkMode, setDarkMode] = useState(() => {
         try {
             const stored = localStorage.getItem(DARK_MODE_KEY)
@@ -111,6 +85,55 @@ export default function App() {
             return false
         }
     })
+
+    // Load from IndexedDB or migrate from localStorage
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                // Patients
+                let pts = await get(STORAGE_KEY)
+                if (pts === undefined) {
+                    const legacy = localStorage.getItem(STORAGE_KEY)
+                    if (legacy) { pts = JSON.parse(legacy); await set(STORAGE_KEY, pts); localStorage.removeItem(STORAGE_KEY) }
+                    else pts = []
+                }
+                
+                // Mortalities
+                let morts = await get(MORTALITIES_KEY)
+                if (morts === undefined) {
+                    const legacy = localStorage.getItem(MORTALITIES_KEY)
+                    if (legacy) { morts = JSON.parse(legacy); await set(MORTALITIES_KEY, morts); localStorage.removeItem(MORTALITIES_KEY) }
+                    else morts = []
+                }
+
+                // Discharges
+                let dis = await get(DISCHARGES_KEY)
+                if (dis === undefined) {
+                    const legacy = localStorage.getItem(DISCHARGES_KEY)
+                    if (legacy) { dis = JSON.parse(legacy); await set(DISCHARGES_KEY, dis); localStorage.removeItem(DISCHARGES_KEY) }
+                    else dis = []
+                }
+
+                // Discharge Reset Date
+                let resDate = await get(DISCHARGES_RESET_KEY)
+                if (resDate === undefined) {
+                    const legacy = localStorage.getItem(DISCHARGES_RESET_KEY)
+                    if (legacy) { resDate = legacy; await set(DISCHARGES_RESET_KEY, resDate); localStorage.removeItem(DISCHARGES_RESET_KEY) }
+                    else resDate = new Date().toLocaleDateString()
+                }
+
+                setPatients(pts)
+                setMortalities(morts)
+                setDischarges(dis)
+                setDischargesResetDate(resDate)
+            } catch (err) {
+                console.error("Failed to load data from IndexedDB", err)
+            } finally {
+                setIsLoaded(true)
+            }
+        }
+        loadData()
+    }, [])
 
     const [showExport, setShowExport] = useState(false)
     const [showScanner, setShowScanner] = useState(false)
@@ -141,34 +164,25 @@ export default function App() {
 
     const toggleDarkMode = useCallback(() => setDarkMode(prev => !prev), [])
 
-    // Persist to localStorage on every change
+    // Persist to IndexedDB on every change
     useEffect(() => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(patients))
-            setSaveFlash(true)
-            const t = setTimeout(() => setSaveFlash(false), 1200)
-            return () => clearTimeout(t)
-        } catch {
-            // localStorage full / unavailable
-        }
-    }, [patients])
+        if (!isLoaded) return;
+        set(STORAGE_KEY, patients).catch(console.error)
+        setSaveFlash(true)
+        const t = setTimeout(() => setSaveFlash(false), 1200)
+        return () => clearTimeout(t)
+    }, [patients, isLoaded])
 
     useEffect(() => {
-        try {
-            localStorage.setItem(MORTALITIES_KEY, JSON.stringify(mortalities))
-        } catch {
-            // localStorage full / unavailable
-        }
-    }, [mortalities])
+        if (!isLoaded) return;
+        set(MORTALITIES_KEY, mortalities).catch(console.error)
+    }, [mortalities, isLoaded])
 
     useEffect(() => {
-        try {
-            localStorage.setItem(DISCHARGES_KEY, JSON.stringify(discharges))
-            localStorage.setItem(DISCHARGES_RESET_KEY, dischargesResetDate)
-        } catch {
-            // localStorage full / unavailable
-        }
-    }, [discharges, dischargesResetDate])
+        if (!isLoaded) return;
+        set(DISCHARGES_KEY, discharges).catch(console.error)
+        set(DISCHARGES_RESET_KEY, dischargesResetDate).catch(console.error)
+    }, [discharges, dischargesResetDate, isLoaded])
 
     const savePatient = useCallback(({ team = 'my_team', name, hospitalNumber, ward, bed, note, critical = false, admissionDate }) => {
         const n = name.trim()
@@ -483,6 +497,14 @@ export default function App() {
     const patientsToExport = selectedPatientIds.size > 0
         ? activePatients.filter(p => selectedPatientIds.has(p.id))
         : activePatients
+
+    if (!isLoaded) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-300">
